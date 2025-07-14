@@ -8,13 +8,15 @@
     <packaging>pom</packaging>
 
     <properties>
-        <jcp.test.version>7.2.0</jcp.test.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jaip.test.version>1.0.0-SNAPSHOT</jaip.test.version>
+        <jcp.test.version>7.2.0</jcp.test.version>
         <junit.version>5.13.3</junit.version>
         <maven.compiler.release>11</maven.compiler.release>
     </properties>
 
     <modules>
+        <module>jaip-test-gemini</module>
     </modules>
 
     <dependencies>
@@ -34,26 +36,25 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>${junit.version}</version>
-        <scope>test</scope>
-      </dependency>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
-      <plugins>
-          <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-clean-plugin</artifactId>
-              <executions>
-                  <execution>
-                      <id>force-clean</id>
-                      <goals>
-                          <goal>clean</goal>
-                      </goals>
-                      <phase>initialize</phase>
-                  </execution>
-              </executions>
-          </plugin>
-      </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>properties-maven-plugin</artifactId>
+                    <version>1.2.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.igormaznitsa</groupId>
+                    <artifactId>jcp</artifactId>
+                    <version>${jcp.test.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
 </project>

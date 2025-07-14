@@ -1,3 +1,5 @@
+package com.igormaznitsa.jaip.providers.gemini;
+
 import static java.lang.String.join;
 
 import com.google.common.collect.Streams;
@@ -17,7 +19,8 @@ import java.util.stream.Stream;
 
 public class GeminiProcessorService implements CommentTextProcessor {
 
-  public static final String PROPERTY_GEMINI_MODEL = "japi.gemini.model";
+  public static final String PROPERTY_GEMINI_MODEL = "jaip.gemini.model";
+  public static final String PROPERTY_GEMINI_API_KEY = "jaip.gemini.api.key";
   public static final String PROPERTY_GEMINI_GENERATE_CONFIG_JSON =
       "japi.gemini.model.generate.config.json";
 
@@ -36,19 +39,25 @@ public class GeminiProcessorService implements CommentTextProcessor {
         .build();
   }
 
+  private static String findPropertyNonNullableValue(final String property,
+                                                     final String defaultValue) {
+    final String result = System.getProperty(property, defaultValue);
+    if (result == null) {
+      throw new IllegalStateException("Can't find property: " + property);
+    }
+    return result;
+  }
+
   @Override
   public void onContextStarted(final PreprocessorContext context) {
-    this.client = new Client();
+    this.geminiModel = findPropertyNonNullableValue(PROPERTY_GEMINI_MODEL, null);
+    this.client = Client.builder()
+        .apiKey(findPropertyNonNullableValue(PROPERTY_GEMINI_API_KEY, null))
+        .build();
     this.logger = context.getPreprocessorLogger();
     this.logger.info("Init GEMINI client");
 
-    this.geminiModel = System.getProperty(PROPERTY_GEMINI_MODEL);
-    if (this.geminiModel == null) {
-      throw new IllegalStateException(
-          "Can't find GEMINI model property (" + PROPERTY_GEMINI_MODEL + ')');
-    } else {
-      this.logger.info("GEMINI model in use: " + this.geminiModel);
-    }
+    this.logger.info("GEMINI model in use: " + this.geminiModel);
 
     final String generateContentConfigJson =
         System.getProperty(PROPERTY_GEMINI_GENERATE_CONFIG_JSON);
@@ -103,11 +112,23 @@ public class GeminiProcessorService implements CommentTextProcessor {
   }
 
   private String makeRequest(final PreprocessorContext context, final String prompt) {
-    this.logger.info("Request to GEMINI");
-    this.logger.debug("Prompt: " + prompt);
+    final long start = System.currentTimeMillis();
+
+    if (context.isVerbose()) {
+      this.logger.info("Sending prompt to the GEMINI model (" + this.geminiModel + "): " + prompt);
+    } else {
+      this.logger.debug("Starting GEMINI generation model (" + this.geminiModel + ")");
+    }
     final GenerateContentResponse response =
         this.client.models.generateContent(this.geminiModel, prompt,
             this.geminiGenerateContentConfig);
+
+    this.logger.debug("GEMINI response code execution result: " + response.codeExecutionResult());
+    if (context.isVerbose()) {
+      this.logger.info(
+          "Completed GEMINI request, spent " + (System.currentTimeMillis() - start) + "ms");
+    }
+
     return response.text();
   }
 
@@ -126,10 +147,10 @@ public class GeminiProcessorService implements CommentTextProcessor {
     }
 
     return Streams.concat(
-        prefix.stream(),
-        Stream.of(join("\n", prompt)).takeWhile(x -> !x.isBlank())
-            .map(x -> makeRequest(preprocessorContext, x)),
-        postfix.stream())
-            .collect(Collectors.joining(preprocessorContext.getEol()));
+            prefix.stream(),
+            Stream.of(join("\n", prompt)).takeWhile(x -> !x.isBlank())
+                .map(x -> makeRequest(preprocessorContext, x)),
+            postfix.stream())
+        .collect(Collectors.joining(preprocessorContext.getEol()));
   }
 }

@@ -1,0 +1,79 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.igormaznitsa</groupId>
+    <artifactId>jaip-tests</artifactId>
+    <version>0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>jaip-test-gemini</artifactId>
+  <packaging>jar</packaging>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>load-secret-properties</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+            <configuration>
+              <files>
+                <file>${project.basedir}/secret_properties.properties</file>
+              </files>
+            </configuration>
+          </execution>
+          <execution>
+            <id>translate-properties-to-system</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>set-system-properties</goal>
+            </goals>
+            <configuration>
+              <properties>
+                <jaip.gemini.model>${jaip.gemini.model}</jaip.gemini.model>
+                <jaip.gemini.api.key>${jaip.gemini.api.key}</jaip.gemini.api.key>
+              </properties>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.igormaznitsa</groupId>
+        <artifactId>jcp</artifactId>
+        <executions>
+          <execution>
+            <id>preprocessSources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>preprocess</goal>
+            </goals>
+            <configuration>
+              <keepLines>false</keepLines>
+              <allowBlocks>true</allowBlocks>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.google.genai</groupId>
+            <artifactId>google-genai</artifactId>
+            <version>1.8.0</version>
+          </dependency>
+          <dependency>
+            <groupId>com.igormaznitsa</groupId>
+            <artifactId>jaip-gemini</artifactId>
+            <version>${jaip.test.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

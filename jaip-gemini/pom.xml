@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>jaip-gemini</artifactId>
-    <packaging>maven-plugin</packaging>
+    <packaging>jar</packaging>
 
     <name>JAIP Gemini</name>
     <description>Powerful multi-pass preprocessor to process directives situated in C-styled commentaries</description>
@@ -51,9 +51,6 @@
                                         <requireJavaVersion>
                                             <version>${maven.compiler.release}</version>
                                         </requireJavaVersion>
-                                        <requireMavenVersion>
-                                            <version>[${min.maven.api}},)</version>
-                                        </requireMavenVersion>
                                         <banDuplicateClasses>
                                             <scopes>
                                                 <scope>compile</scope>
@@ -195,29 +192,12 @@
             <groupId>com.google.genai</groupId>
             <artifactId>google-genai</artifactId>
             <version>1.8.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>properties-maven-plugin</artifactId>
-                <version>1.2.1</version>
-                <executions>
-                    <execution>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>read-project-properties</goal>
-                        </goals>
-                        <configuration>
-                            <files>
-                                <file>${basedir}/../project-parent/buildNumber.properties</file>
-                            </files>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>com.igormaznitsa</groupId>
                 <artifactId>uber-pom</artifactId>

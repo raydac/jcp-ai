@@ -14,6 +14,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>11</maven.compiler.release>
     </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.8.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <modules>
         <module>jaip-gemini</module>
@@ -55,6 +63,15 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <profiles>
+        <profile>
+            <id>it</id>
+            <modules>
+                <module>jaip-tests</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
