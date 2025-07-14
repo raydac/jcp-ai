@@ -16,8 +16,7 @@
     </properties>
 
     <modules>
-        <module>jaip-annotations</module>
-        <module>jaip-annotation-processor</module>
+        <module>jaip-gemini</module>
     </modules>
 
     <developers>
