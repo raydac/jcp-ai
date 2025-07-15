@@ -29,7 +29,7 @@ class ArraySorterTest {
   void testFastSort_multiple() {
     assertArrayEquals(new int[] {-12, -6, 1, 1, 10, 33, 34, 44, 56, 123},
         ArraySorter.fastSort(new int[] {1, 10, -12, 44, 56, 123, 33, 1, 34, -6}, true));
-    assertArrayEquals(new int[] {-12, -6, 1, 1, 10, 33, 34, 44, 56, 123},
+    assertArrayEquals(new int[] {123, 56, 44, 34, 33, 10, 1, 1, -6, -12},
         ArraySorter.fastSort(new int[] {-6, 34, 1, 33, 123, 56, 44, -12, 10, 1}, false));
   }
 }

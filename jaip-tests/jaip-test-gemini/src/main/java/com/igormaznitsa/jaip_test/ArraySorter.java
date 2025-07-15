@@ -9,9 +9,12 @@ public class ArraySorter {
 
     //$"""JAIP> you are Java /*$mvn.project.property.maven.compiler.release$*/ code generator
     //$"""JAIP> generate implementation of static function: int [] fastSort(final int [] array, final boolean asc)
-    //$"""JAIP> the function should sort integer array, if asc is true then ascending order, descending otherwise
-    //$"""JAIP> everything must be implemented in the body of the method and onl;y body must be returned without aby comments and extra texts
-    //$"""JAIP> you can't use any external libraries or side collections for implementation, only pure java code
+    //$"""JAIP> array is the array to be sorted, it can be null or empty, in the case the array should be returned without changes
+    //$"""JAIP> asc means sort order, if it is true then ascend sorting, if false then descent sorting
+    //$"""JAIP> as the result should be returned sorted version of array
+    //$"""JAIP> use timsort algorithm to sort the array
+    //$"""JAIP> only pure java operations must be used, no any third side libraries or collections and their helpers and utilities, everything must be implemented in single method body, without any additional methods and functions
+    //$"""JAIP> important to return pure method body implementation as Java text prepared to be inserted into sources, without any comments and additional texts
 
     //$// --------------------
 

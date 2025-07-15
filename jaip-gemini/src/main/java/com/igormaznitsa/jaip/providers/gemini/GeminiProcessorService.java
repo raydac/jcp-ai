@@ -17,10 +17,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
+import java.util.Locale;
 
 public class GeminiProcessorService extends AbstractJaipProcessor {
 
   public static final String PROPERTY_GEMINI_MODEL = "jaip.gemini.model";
+  public static final String PROPERTY_GEMINI_PROJECT_ID = "jaip.gemini.project.id";
   public static final String PROPERTY_GEMINI_API_KEY = "jaip.gemini.api.key";
   public static final String PROPERTY_GEMINI_GENERATE_CONFIG_JSON =
       "jaip.gemini.model.generate.config.json";
@@ -55,8 +57,7 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
             .role("model")
             .parts(Part.builder().text("you are a Java code generator").build())
             .build())
-        .stopSequences("```")
-        .seed(823746)
+        .seed(234789324)
         .responseModalities("TEXT")
         .build();
   }
@@ -69,10 +70,22 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
   @Override
   protected void doContextStarted(PreprocessorContext context) {
     this.geminiModel = findPropertyNonNullableValue(PROPERTY_GEMINI_MODEL, null);
-    this.client = Client.builder()
-        .apiKey(findPropertyNonNullableValue(PROPERTY_GEMINI_API_KEY, null))
-        .build();
-    logInfo("model in use: " + this.geminiModel);
+    logInfo("required model: " + this.geminiModel);
+
+    var clientBuilder = Client.builder();
+    final String apiKey = System.getProperty(PROPERTY_GEMINI_API_KEY, null);
+    if (apiKey != null) {
+      logInfo("api key provided");
+      clientBuilder.apiKey(apiKey);
+    }
+
+    final String projectId = System.getProperty(PROPERTY_GEMINI_PROJECT_ID, null);
+    if (projectId != null) {
+      logInfo("project id: " + projectId);
+      clientBuilder.project(projectId);
+    }
+
+    this.client = clientBuilder.build();
 
     final String generateContentConfigJson =
         System.getProperty(PROPERTY_GEMINI_GENERATE_CONFIG_JSON);
@@ -114,6 +127,27 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
         .encodeToString(MD5_DIGEST.digest((model + prompt).getBytes(StandardCharsets.UTF_8)));
   }
 
+  private static String clearResponse(final String text) {
+    String trimmed = text.trim();
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      trimmed = trimmed.substring(1, trimmed.length() - 1);
+      return clearResponse(trimmed);
+    }
+    if (trimmed.startsWith("```")) {
+      trimmed = trimmed.substring(3);
+      return clearResponse(trimmed);
+    }
+    if (trimmed.endsWith("```")) {
+      trimmed = trimmed.substring(0, trimmed.length() - 3);
+      return clearResponse(trimmed);
+    }
+    if (trimmed.toLowerCase(Locale.ENGLISH).startsWith("java")) {
+      trimmed = trimmed.substring("java".length());
+      return clearResponse(trimmed);
+    }
+    return trimmed;
+  }
+
   @Override
   public String doRequestForPrompt(
       final String prompt,
@@ -127,7 +161,9 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
 
     if (result == null) {
       final GenerateContentResponse response =
-          this.client.models.generateContent(this.geminiModel, prompt,
+          this.client.models.generateContent(
+              this.geminiModel,
+              prompt,
               this.geminiGenerateContentConfig);
 
       this.logDebug("response: " + response);
@@ -140,8 +176,10 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
       if (result == null) {
         throw new IllegalStateException("unexpectedly returned null as response text");
       }
-      if (result.trim().isEmpty()) {
-        throw new IllegalStateException("unexpectedly returned empty response");
+
+      result = clearResponse(result);
+      if (result.isEmpty()) {
+        throw new IllegalStateException("unexpectedly returned empty sources");
       }
 
       this.jaipPromptCacheFile.getCache().put(cacheKey, result);
