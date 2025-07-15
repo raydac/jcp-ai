@@ -1,63 +1,78 @@
 package com.igormaznitsa.jaip.providers.gemini;
 
-import static java.lang.String.join;
+import static com.igormaznitsa.jaip.common.StringUtils.findPropertyNonNullableValue;
+import static com.igormaznitsa.jaip.common.cache.JaipPromptCacheFile.PROPERTY_JAIP_PROMPT_CACHE_FILE;
 
-import com.google.common.collect.Streams;
 import com.google.genai.Client;
+import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
+import com.igormaznitsa.jaip.common.AbstractJaipProcessor;
+import com.igormaznitsa.jaip.common.cache.JaipPromptCacheFile;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
-import com.igormaznitsa.jcp.context.CommentTextProcessor;
 import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
-import com.igormaznitsa.jcp.logger.PreprocessorLogger;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
 
-public class GeminiProcessorService implements CommentTextProcessor {
+public class GeminiProcessorService extends AbstractJaipProcessor {
 
   public static final String PROPERTY_GEMINI_MODEL = "jaip.gemini.model";
   public static final String PROPERTY_GEMINI_API_KEY = "jaip.gemini.api.key";
   public static final String PROPERTY_GEMINI_GENERATE_CONFIG_JSON =
-      "japi.gemini.model.generate.config.json";
+      "jaip.gemini.model.generate.config.json";
 
   private Client client;
   private String geminiModel;
   private GenerateContentConfig geminiGenerateContentConfig;
-  private PreprocessorLogger logger;
+
+  private JaipPromptCacheFile jaipPromptCacheFile;
+
+  private static final MessageDigest MD5_DIGEST;
+
+  static {
+    try {
+      MD5_DIGEST = MessageDigest.getInstance("MD5");
+    } catch (Exception ex) {
+      throw new Error("Can't find MD5 digest", ex);
+    }
+  }
+
+  public GeminiProcessorService() {
+    super();
+  }
 
   private static GenerateContentConfig makeDefaultGenerateContentConfig() {
     return GenerateContentConfig.builder()
-        .temperature(0.0f)
+        .temperature(0.2f)
         .topP(0.95f)
         .topK(40.0f)
-        .maxOutputTokens(16384)
+        .maxOutputTokens(128 * 1024)
+        .systemInstruction(Content.builder()
+            .role("model")
+            .parts(Part.builder().text("you are a Java code generator").build())
+            .build())
         .stopSequences("```")
+        .seed(823746)
+        .responseModalities("TEXT")
         .build();
   }
 
-  private static String findPropertyNonNullableValue(final String property,
-                                                     final String defaultValue) {
-    final String result = System.getProperty(property, defaultValue);
-    if (result == null) {
-      throw new IllegalStateException("Can't find property: " + property);
-    }
-    return result;
+  @Override
+  public String getName() {
+    return "GEMINI";
   }
 
   @Override
-  public void onContextStarted(final PreprocessorContext context) {
+  protected void doContextStarted(PreprocessorContext context) {
     this.geminiModel = findPropertyNonNullableValue(PROPERTY_GEMINI_MODEL, null);
     this.client = Client.builder()
         .apiKey(findPropertyNonNullableValue(PROPERTY_GEMINI_API_KEY, null))
         .build();
-    this.logger = context.getPreprocessorLogger();
-    this.logger.info("Init GEMINI client");
-
-    this.logger.info("GEMINI model in use: " + this.geminiModel);
+    logInfo("model in use: " + this.geminiModel);
 
     final String generateContentConfigJson =
         System.getProperty(PROPERTY_GEMINI_GENERATE_CONFIG_JSON);
@@ -66,91 +81,76 @@ public class GeminiProcessorService implements CommentTextProcessor {
     } else {
       this.geminiGenerateContentConfig = GenerateContentConfig.fromJson(generateContentConfigJson);
     }
+
+    try {
+      this.jaipPromptCacheFile = JaipPromptCacheFile.findAmongSystemProperties();
+      if (this.jaipPromptCacheFile == null) {
+        logInfo("there is no any system property defining file cache (property  " +
+            PROPERTY_JAIP_PROMPT_CACHE_FILE + ")");
+      } else {
+        logInfo("prompt cache file: " + this.jaipPromptCacheFile.getPath());
+      }
+    } catch (IOException ex) {
+      logError("Error during open prompt cache file, so it will be ignored: " + ex.getMessage());
+      this.jaipPromptCacheFile = null;
+    }
   }
 
   @Override
-  public void onContextStopped(final PreprocessorContext context, Throwable error) {
+  protected void doContextStopped(PreprocessorContext context, Throwable error) {
     try {
       this.client.close();
     } finally {
-      this.logger.info("GEMINI client stopped");
+      if (this.jaipPromptCacheFile != null) {
+        this.logInfo("flushing prompt cache file: " + this.jaipPromptCacheFile.getPath());
+        this.jaipPromptCacheFile.flush();
+      }
+      this.jaipPromptCacheFile = null;
     }
   }
 
-  private static final String JAIP_PROMPT_PREFIX = "JAIP>";
-
-  private static List<String> extreactPrefixLines(final String[] textLines) {
-    return Arrays.stream(textLines).takeWhile(x -> !leftTrim(x).startsWith(JAIP_PROMPT_PREFIX))
-        .collect(Collectors.toList());
-  }
-
-  private static String leftTrim(final String text) {
-    int i = 0;
-    while (i < text.length() && Character.isWhitespace(text.charAt(i))) {
-      i++;
-    }
-    return text.substring(i);
-  }
-
-  private static List<String> extreactPrompt(final List<String> prefix, final String[] textLines) {
-    return Arrays.stream(textLines).skip(prefix.size())
-        .map(GeminiProcessorService::leftTrim)
-        .takeWhile(x -> x.startsWith(JAIP_PROMPT_PREFIX))
-        .map(x -> x.substring(JAIP_PROMPT_PREFIX.length()))
-        .collect(Collectors.toList());
-  }
-
-  private static List<String> extreactPostfixLines(final List<String> prefix,
-                                                   final List<String> prompt,
-                                                   final String[] textLines) {
-    final List<String> result = Arrays.stream(textLines).skip(prefix.size() + prompt.size())
-        .collect(Collectors.toList());
-    if (result.stream().anyMatch(x -> leftTrim(x).startsWith(JAIP_PROMPT_PREFIX))) {
-      throw new IllegalArgumentException("Detected unexpected mix of prompt and postfix lines");
-    }
-    return result;
-  }
-
-  private String makeRequest(final PreprocessorContext context, final String prompt) {
-    final long start = System.currentTimeMillis();
-
-    if (context.isVerbose()) {
-      this.logger.info("Sending prompt to the GEMINI model (" + this.geminiModel + "): " + prompt);
-    } else {
-      this.logger.debug("Starting GEMINI generation model (" + this.geminiModel + ")");
-    }
-    final GenerateContentResponse response =
-        this.client.models.generateContent(this.geminiModel, prompt,
-            this.geminiGenerateContentConfig);
-
-    this.logger.debug("GEMINI response code execution result: " + response.codeExecutionResult());
-    if (context.isVerbose()) {
-      this.logger.info(
-          "Completed GEMINI request, spent " + (System.currentTimeMillis() - start) + "ms");
-    }
-
-    return response.text();
+  private static String makeKey(final String model, final String prompt) {
+    return Base64.getEncoder()
+        .encodeToString(MD5_DIGEST.digest((model + prompt).getBytes(StandardCharsets.UTF_8)));
   }
 
   @Override
-  public String onUncommentText(final String text, FileInfoContainer fileInfoContainer,
-                                PreprocessorContext preprocessorContext,
-                                PreprocessingState preprocessingState) throws IOException {
-    final String[] lines = text.split("\\R");
+  public String doRequestForPrompt(
+      final String prompt,
+      final FileInfoContainer fileInfoContainer,
+      final PreprocessorContext context,
+      final PreprocessingState state) {
+    final String cacheKey = makeKey(this.geminiModel, prompt);
 
-    final List<String> prefix = extreactPrefixLines(lines);
-    final List<String> prompt = extreactPrompt(prefix, lines);
-    final List<String> postfix = extreactPostfixLines(prefix, prompt, lines);
+    String result = this.jaipPromptCacheFile == null ? null :
+        this.jaipPromptCacheFile.getCache().find(cacheKey);
 
-    if (prefix.size() + prompt.size() + postfix.size() != lines.length) {
-      throw new IllegalStateException("Unexpectedly non-equal number of extracted lines: " + text);
+    if (result == null) {
+      final GenerateContentResponse response =
+          this.client.models.generateContent(this.geminiModel, prompt,
+              this.geminiGenerateContentConfig);
+
+      this.logDebug("response: " + response);
+
+      result = response.text();
+      if (context.isVerbose()) {
+        this.logInfo("response text: " + result);
+      }
+
+      if (result == null) {
+        throw new IllegalStateException("unexpectedly returned null as response text");
+      }
+      if (result.trim().isEmpty()) {
+        throw new IllegalStateException("unexpectedly returned empty response");
+      }
+
+      this.jaipPromptCacheFile.getCache().put(cacheKey, result);
+      this.jaipPromptCacheFile.flush();
+    } else {
+      this.logDebug("response found in cache file");
     }
 
-    return Streams.concat(
-            prefix.stream(),
-            Stream.of(join("\n", prompt)).takeWhile(x -> !x.isBlank())
-                .map(x -> makeRequest(preprocessorContext, x)),
-            postfix.stream())
-        .collect(Collectors.joining(preprocessorContext.getEol()));
+    return result;
   }
+
 }

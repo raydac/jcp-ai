@@ -184,8 +184,13 @@
     <dependencies>
         <dependency>
             <groupId>com.igormaznitsa</groupId>
+            <artifactId>jaip-commons</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.igormaznitsa</groupId>
             <artifactId>jcp</artifactId>
-            <version>7.2.0</version>
+            <version>${jcp.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -224,6 +229,18 @@
                         <configuration>
                             <enforceInjecting>true</enforceInjecting>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
