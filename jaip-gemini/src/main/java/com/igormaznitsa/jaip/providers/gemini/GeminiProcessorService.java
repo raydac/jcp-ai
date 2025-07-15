@@ -1,14 +1,18 @@
 package com.igormaznitsa.jaip.providers.gemini;
 
 import static com.igormaznitsa.jaip.common.StringUtils.findPropertyNonNullableValue;
+import static com.igormaznitsa.jaip.common.StringUtils.normalizeJavaResponse;
 import static com.igormaznitsa.jaip.common.cache.JaipPromptCacheFile.PROPERTY_JAIP_PROMPT_CACHE_FILE;
 
 import com.google.genai.Client;
+import com.google.genai.types.ClientOptions;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.HttpOptions;
 import com.google.genai.types.Part;
 import com.igormaznitsa.jaip.common.AbstractJaipProcessor;
+import com.igormaznitsa.jaip.common.StringUtils;
 import com.igormaznitsa.jaip.common.cache.JaipPromptCacheFile;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.PreprocessingState;
@@ -17,7 +21,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
-import java.util.Locale;
 
 public class GeminiProcessorService extends AbstractJaipProcessor {
 
@@ -26,6 +29,12 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
   public static final String PROPERTY_GEMINI_API_KEY = "jaip.gemini.api.key";
   public static final String PROPERTY_GEMINI_GENERATE_CONFIG_JSON =
       "jaip.gemini.model.generate.config.json";
+  public static final String PROPERTY_GEMINI_DISABLE_NORMALIZE_RESPONSE =
+      "jaip.gemini.disable.normalize.response";
+  public static final String PROPERTY_GEMINI_CLIENT_HTTP_CONFIG_JSON =
+      "jaip.gemini.client.http.config.json";
+  public static final String PROPERTY_GEMINI_CLIENT_OPTIONS_JSON =
+      "jaip.gemini.client.options.json";
 
   private Client client;
   private String geminiModel;
@@ -49,13 +58,13 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
 
   private static GenerateContentConfig makeDefaultGenerateContentConfig() {
     return GenerateContentConfig.builder()
-        .temperature(0.2f)
+        .temperature(0.3f)
         .topP(0.95f)
         .topK(40.0f)
         .maxOutputTokens(128 * 1024)
         .systemInstruction(Content.builder()
             .role("model")
-            .parts(Part.builder().text("you are a Java code generator").build())
+            .parts(Part.builder().text("You are very skilled senior programming engineer with very deep knowledge in algorithms and Java and core Java development.").build())
             .build())
         .seed(234789324)
         .responseModalities("TEXT")
@@ -73,6 +82,12 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
     logInfo("required model: " + this.geminiModel);
 
     var clientBuilder = Client.builder();
+
+    final String clientConfigJson = System.getProperty(PROPERTY_GEMINI_CLIENT_OPTIONS_JSON);
+    if (clientConfigJson != null) {
+      logInfo("applying provided client config as Json");
+      clientBuilder.clientOptions(ClientOptions.fromJson(clientConfigJson));
+    }
     final String apiKey = System.getProperty(PROPERTY_GEMINI_API_KEY, null);
     if (apiKey != null) {
       logInfo("api key provided");
@@ -87,12 +102,24 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
 
     this.client = clientBuilder.build();
 
+    final String httpClientJson =
+        System.getProperty(PROPERTY_GEMINI_CLIENT_HTTP_CONFIG_JSON);
+    if (httpClientJson != null) {
+      logInfo("applying http client config provided as Json");
+      clientBuilder.httpOptions(HttpOptions.fromJson(httpClientJson));
+    } else {
+      logInfo("using default http client config");
+    }
+
     final String generateContentConfigJson =
         System.getProperty(PROPERTY_GEMINI_GENERATE_CONFIG_JSON);
     if (generateContentConfigJson == null) {
+      logInfo("using default generate content config");
       this.geminiGenerateContentConfig = makeDefaultGenerateContentConfig();
     } else {
-      this.geminiGenerateContentConfig = GenerateContentConfig.fromJson(generateContentConfigJson);
+      logInfo("applying generate client config provided as Json");
+      this.geminiGenerateContentConfig =
+          GenerateContentConfig.fromJson(generateContentConfigJson);
     }
 
     try {
@@ -107,6 +134,7 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
       logError("Error during open prompt cache file, so it will be ignored: " + ex.getMessage());
       this.jaipPromptCacheFile = null;
     }
+    this.client = clientBuilder.build();
   }
 
   @Override
@@ -127,27 +155,6 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
         .encodeToString(MD5_DIGEST.digest((model + prompt).getBytes(StandardCharsets.UTF_8)));
   }
 
-  private static String clearResponse(final String text) {
-    String trimmed = text.trim();
-    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-      trimmed = trimmed.substring(1, trimmed.length() - 1);
-      return clearResponse(trimmed);
-    }
-    if (trimmed.startsWith("```")) {
-      trimmed = trimmed.substring(3);
-      return clearResponse(trimmed);
-    }
-    if (trimmed.endsWith("```")) {
-      trimmed = trimmed.substring(0, trimmed.length() - 3);
-      return clearResponse(trimmed);
-    }
-    if (trimmed.toLowerCase(Locale.ENGLISH).startsWith("java")) {
-      trimmed = trimmed.substring("java".length());
-      return clearResponse(trimmed);
-    }
-    return trimmed;
-  }
-
   @Override
   public String doRequestForPrompt(
       final String prompt,
@@ -160,6 +167,7 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
         this.jaipPromptCacheFile.getCache().find(cacheKey);
 
     if (result == null) {
+      logInfo("sending request for prompt found at " + StringUtils.getCurrentSourcesPosition(state));
       final GenerateContentResponse response =
           this.client.models.generateContent(
               this.geminiModel,
@@ -167,7 +175,6 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
               this.geminiGenerateContentConfig);
 
       this.logDebug("response: " + response);
-
       result = response.text();
       if (context.isVerbose()) {
         this.logInfo("response text: " + result);
@@ -177,15 +184,22 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
         throw new IllegalStateException("unexpectedly returned null as response text");
       }
 
-      result = clearResponse(result);
-      if (result.isEmpty()) {
-        throw new IllegalStateException("unexpectedly returned empty sources");
+      this.logInfo("got generated response " + result.length() + " char(s)");
+
+      if (Boolean.getBoolean(PROPERTY_GEMINI_DISABLE_NORMALIZE_RESPONSE)) {
+        logWarn("response normalize disabled");
+      } else {
+        logDebug("normalizing response");
+        result = normalizeJavaResponse(result);
+      }
+      if (result.isBlank()) {
+        throw new IllegalStateException("Blank text as result of request");
       }
 
       this.jaipPromptCacheFile.getCache().put(cacheKey, result);
       this.jaipPromptCacheFile.flush();
     } else {
-      this.logDebug("response found in cache file");
+      this.logDebug("detected cached response for prompt");
     }
 
     return result;

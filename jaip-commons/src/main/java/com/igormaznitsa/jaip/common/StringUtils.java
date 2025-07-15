@@ -1,11 +1,48 @@
 package com.igormaznitsa.jaip.common;
 
+import com.igormaznitsa.jcp.containers.FileInfoContainer;
+import com.igormaznitsa.jcp.context.PreprocessingState;
+import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
+
 public final class StringUtils {
 
   public static final String JAIP_PROMPT_PREFIX = "JAIP>";
 
   private StringUtils() {
 
+  }
+
+  public static String getCurrentSourcesPosition(final PreprocessingState state) {
+    var stack = state.makeIncludeStack();
+    if (stack == null || stack.length == 0) return "UNKNOWN";
+    final FilePositionInfo fileInfo = stack[stack.length - 1];
+    return  fileInfo.getFile().getName() +  ':' + fileInfo.getLineNumber();
+  }
+
+  public static String normalizeJavaResponse(final String response) {
+    String trimmed = response.trim();
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      trimmed = trimmed.substring(1, trimmed.length() - 1);
+      return normalizeJavaResponse(trimmed);
+    }
+    if (trimmed.startsWith("```") && trimmed.endsWith("```")) {
+      int isoCharPosition = -1;
+      for(int i=0;i<trimmed.length();i++) {
+        if (Character.isISOControl(trimmed.charAt(i))) {
+          isoCharPosition = i;
+          break;
+        }
+      }
+      if (isoCharPosition >= 0) {
+        trimmed = trimmed.substring(isoCharPosition + 1, trimmed.length() - 3);
+      }
+      return normalizeJavaResponse(trimmed);
+    }
+    if (trimmed.endsWith("```")) {
+      trimmed = trimmed.substring(0, trimmed.length() - 3);
+      return normalizeJavaResponse(trimmed);
+    }
+    return trimmed;
   }
 
   public static String findPropertyNonNullableValue(
