@@ -44,11 +44,13 @@ public class JaipPromptResultCache {
     return record == null ? null : record.getResult();
   }
 
-  public synchronized void put(final String key, final String response) {
+  public synchronized void put(final String key, final String fileName, final int line, final String response) {
     this.changed = true;
 
     final JaipCacheRecord newRecord = new JaipCacheRecord();
     newRecord.setUuid(UUID.randomUUID());
+    newRecord.setFileName(fileName);
+    newRecord.setLine(line);
     newRecord.setInstant(Instant.now());
     newRecord.setKey(requireNonNull(key));
     newRecord.setResult(requireNonNull(response));

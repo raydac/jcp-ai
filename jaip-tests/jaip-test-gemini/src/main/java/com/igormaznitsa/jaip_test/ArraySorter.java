@@ -11,7 +11,8 @@ public class ArraySorter {
   //$"""JAIP> it returns the same incoming array if it is null, empty or single value array, else returns new version of array with sorted values.
   //$"""JAIP> the method should contain whole implementation of sort algorithm without any use of third side libraries, helpers and utility classes
   //$"""JAIP> can't have additional methods and functions, all implementation must be as the single method
-  //$"""JAIP> the result text must contain only code and javadoc comment for the header of the generated method, no any additional texts, thoughts or internal comments, it should be prepared for copy-paste into a Java class sources
+  //$"""JAIP> the result text must contain only code and javadoc comment for the header of the generated method
+  //$"""JAIP> don't comment the method internally to keep it compact
   //#-
   public static int[] fastSort(final int[] array, final boolean asc) {
     throw new UnsupportedOperationException("not generated");

@@ -12,11 +12,11 @@ import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.HttpOptions;
 import com.google.genai.types.Part;
 import com.igormaznitsa.jaip.common.AbstractJaipProcessor;
-import com.igormaznitsa.jaip.common.StringUtils;
 import com.igormaznitsa.jaip.common.cache.JaipPromptCacheFile;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
+import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -64,7 +64,9 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
         .maxOutputTokens(128 * 1024)
         .systemInstruction(Content.builder()
             .role("model")
-            .parts(Part.builder().text("You are very skilled senior programming engineer with very deep knowledge in algorithms and Java and core Java development.").build())
+            .parts(Part.builder().text(
+                    "You are very skilled senior programming engineer with very deep knowledge in algorithms and Java and core Java development.")
+                .build())
             .build())
         .seed(234789324)
         .responseModalities("TEXT")
@@ -158,48 +160,68 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
   @Override
   public String doRequestForPrompt(
       final String prompt,
+      final FilePositionInfo filePositionInfo,
       final FileInfoContainer fileInfoContainer,
       final PreprocessorContext context,
-      final PreprocessingState state) {
+      final PreprocessingState preprocessingState) {
     final String cacheKey = makeKey(this.geminiModel, prompt);
 
     String result = this.jaipPromptCacheFile == null ? null :
         this.jaipPromptCacheFile.getCache().find(cacheKey);
 
+    final String preprocessedFilePosition = filePositionInfo.getFile().getName() + ':' + filePositionInfo.getLineNumber();
     if (result == null) {
-      logInfo("sending request for prompt found at " + StringUtils.getCurrentSourcesPosition(state));
-      final GenerateContentResponse response =
-          this.client.models.generateContent(
-              this.geminiModel,
-              prompt,
-              this.geminiGenerateContentConfig);
+      final long start = System.currentTimeMillis();
+      RuntimeException exception = null;
+      try {
+        logInfo(
+            "sending request for prompt found at " + preprocessedFilePosition);
+        final GenerateContentResponse response =
+            this.client.models.generateContent(
+                this.geminiModel,
+                prompt,
+                this.geminiGenerateContentConfig);
 
-      this.logDebug("response: " + response);
-      result = response.text();
-      if (context.isVerbose()) {
-        this.logInfo("response text: " + result);
+        this.logDebug("response: " + response);
+        result = response.text();
+        if (context.isVerbose()) {
+          this.logInfo("response text: " + result);
+        }
+
+        if (result == null) {
+          throw new IllegalStateException("unexpectedly returned null as response text");
+        }
+
+        this.logInfo("got generated response " + result.length() + " char(s)");
+
+        if (Boolean.getBoolean(PROPERTY_GEMINI_DISABLE_NORMALIZE_RESPONSE)) {
+          logWarn("response normalize disabled");
+        } else {
+          logDebug("normalizing response");
+          result = normalizeJavaResponse(result);
+        }
+        if (result.isBlank()) {
+          throw new IllegalStateException("Blank text as result of request");
+        }
+
+        this.jaipPromptCacheFile.getCache()
+            .put(cacheKey, filePositionInfo.getFile().getName(), filePositionInfo.getLineNumber(),
+                result);
+        this.jaipPromptCacheFile.flush();
+      } catch (RuntimeException ex) {
+        exception = ex;
+        throw ex;
+      } finally {
+        if (exception != null) {
+          logError("can't get response for " + preprocessedFilePosition + " for error: " +
+              exception.getMessage());
+        } else {
+          logInfo("got response for " + preprocessedFilePosition + ", spent " +
+              (System.currentTimeMillis() - start) + " ms");
+        }
       }
-
-      if (result == null) {
-        throw new IllegalStateException("unexpectedly returned null as response text");
-      }
-
-      this.logInfo("got generated response " + result.length() + " char(s)");
-
-      if (Boolean.getBoolean(PROPERTY_GEMINI_DISABLE_NORMALIZE_RESPONSE)) {
-        logWarn("response normalize disabled");
-      } else {
-        logDebug("normalizing response");
-        result = normalizeJavaResponse(result);
-      }
-      if (result.isBlank()) {
-        throw new IllegalStateException("Blank text as result of request");
-      }
-
-      this.jaipPromptCacheFile.getCache().put(cacheKey, result);
-      this.jaipPromptCacheFile.flush();
     } else {
-      this.logDebug("detected cached response for prompt");
+      this.logInfo("detected cached response for prompt at " + preprocessedFilePosition);
     }
 
     return result;

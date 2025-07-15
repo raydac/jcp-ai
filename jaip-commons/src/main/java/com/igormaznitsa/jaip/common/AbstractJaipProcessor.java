@@ -8,6 +8,7 @@ import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.CommentTextProcessor;
 import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
+import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.logger.PreprocessorLogger;
 import java.util.Arrays;
 import java.util.List;
@@ -85,23 +86,26 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
     this.logger = null;
   }
 
-  protected void doContextStopped(PreprocessorContext context, Throwable error) {
+  protected void doContextStopped(
+      PreprocessorContext context,
+      Throwable error) {
 
   }
 
   @Override
-  public final String onUncommentText(
-      final int firstLineIndent,
-      final String text,
-      final FileInfoContainer fileInfoContainer,
-      final PreprocessorContext preprocessorContext,
-      final PreprocessingState preprocessingState) {
-
+  public String onUncommentText(
+      int firstLineIndent,
+      String text,
+      FilePositionInfo filePositionInfo,
+      FileInfoContainer fileInfoContainer,
+      PreprocessorContext preprocessorContext,
+      PreprocessingState preprocessingState) {
     logDebug("Incoming potential prompt: " + text);
 
     final String[] lines = text.split("\\R");
 
-    final String indent = preprocessorContext.isPreserveIndents() ?  " ".repeat(firstLineIndent) : "";
+    final String indent =
+        preprocessorContext.isPreserveIndents() ? " ".repeat(firstLineIndent) : "";
 
     final List<String> prefix = extreactPrefixLines(lines);
     final List<String> prompt = extreactPrompt(prefix, lines);
@@ -113,31 +117,35 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
 
     final long start = System.currentTimeMillis();
     try {
-      final String result = Stream.concat(
+      return Stream.concat(
               prefix.stream(),
               Stream.concat(
                   Stream.of(join("\n", prompt))
                       .takeWhile(x -> !x.isBlank())
                       .peek(x -> logDebug("prepared prompt part: " + x))
-                      .map(x -> this.doRequestForPrompt(x, fileInfoContainer, preprocessorContext,
-                          preprocessingState)),
+                      .map(x -> this.doRequestForPrompt(x,
+                              filePositionInfo,
+                              fileInfoContainer,
+                              preprocessorContext,
+                              preprocessingState
+                          )
+                      ),
                   postfix.stream()))
           .flatMap(x -> Arrays.stream(x.split("\\R")))
           .map(x -> indent + x)
-          .collect(Collectors.joining(preprocessorContext.getEol(), "",  preprocessorContext.getEol()));
-      return result;
+          .collect(
+              Collectors.joining(preprocessorContext.getEol(), "", preprocessorContext.getEol()));
     } finally {
-      if (preprocessorContext.isVerbose()) {
-        this.logInfo("completed prompt, spent " + (System.currentTimeMillis() - start) + "ms");
-      }
+      this.logDebug("completed prompt, spent " + (System.currentTimeMillis() - start) + "ms");
     }
   }
 
   public abstract String doRequestForPrompt(
       String prompt,
+      FilePositionInfo filePositionInfo,
       FileInfoContainer fileInfoContainer,
-      PreprocessorContext context,
-      PreprocessingState state);
+      PreprocessorContext preprocessorContext,
+      PreprocessingState preprocessingState);
 
   public abstract String getName();
 }

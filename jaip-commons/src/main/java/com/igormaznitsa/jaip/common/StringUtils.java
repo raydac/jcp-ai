@@ -12,10 +12,14 @@ public final class StringUtils {
 
   }
 
-  public static String getCurrentSourcesPosition(final PreprocessingState state) {
+  public static FilePositionInfo findFilePositionInfo(final PreprocessingState state) {
     var stack = state.makeIncludeStack();
-    if (stack == null || stack.length == 0) return "UNKNOWN";
-    final FilePositionInfo fileInfo = stack[stack.length - 1];
+    if (stack == null || stack.length == 0) throw new IllegalStateException("Can't find any sources int include stack");
+    return stack[stack.length - 1];
+  }
+
+  public static String getCurrentSourcesPosition(final PreprocessingState state) {
+    final FilePositionInfo fileInfo = findFilePositionInfo(state);
     return  fileInfo.getFile().getName() +  ':' + fileInfo.getLineNumber();
   }
 

@@ -10,6 +10,8 @@ public class JaipCacheRecord {
   private Instant instant;
   private String key;
   private String result;
+  private String fileName;
+  private int line;
 
   public JaipCacheRecord() {
 
@@ -17,6 +19,22 @@ public class JaipCacheRecord {
 
   public UUID getUuid() {
     return this.uuid;
+  }
+
+  public String getFileName() {
+    return this.fileName;
+  }
+
+  public void setFileName(final String fileName) {
+    this.fileName = requireNonNull(fileName);
+  }
+
+  public int getLine() {
+    return this.line;
+  }
+
+  public void setLine(final int line) {
+    this.line = line;
   }
 
   public void setUuid(UUID uid) {
