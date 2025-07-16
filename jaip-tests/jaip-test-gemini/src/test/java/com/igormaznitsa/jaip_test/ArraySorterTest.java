@@ -2,6 +2,7 @@ package com.igormaznitsa.jaip_test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,14 +16,16 @@ class ArraySorterTest {
 
   @Test
   void testFastSort_empty() {
-    assertArrayEquals(new int[0], ArraySorter.fastSort(new int[0], true));
-    assertArrayEquals(new int[0], ArraySorter.fastSort(new int[0], false));
+    final int[] array = new int[0];
+    assertSame(array, ArraySorter.fastSort(array, true));
+    assertSame(array, ArraySorter.fastSort(array, false));
   }
 
   @Test
   void testFastSort_single() {
-    assertArrayEquals(new int[] {1}, ArraySorter.fastSort(new int[] {1}, true));
-    assertArrayEquals(new int[] {1}, ArraySorter.fastSort(new int[] {1}, false));
+    final int[] array = new int[] {1};
+    assertSame(array, ArraySorter.fastSort(array, true));
+    assertSame(array, ArraySorter.fastSort(array, false));
   }
 
   @Test
