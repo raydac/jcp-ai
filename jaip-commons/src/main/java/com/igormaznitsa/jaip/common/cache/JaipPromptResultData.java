@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 
-public class JaipPromptResultCache {
+public class JaipPromptResultData {
 
   private static final Gson GSON = new GsonBuilder()
       .setFormattingStyle(FormattingStyle.PRETTY)
@@ -23,7 +23,7 @@ public class JaipPromptResultCache {
   private final LinkedHashMap<String, JaipCacheRecord> records = new LinkedHashMap<>();
   private boolean changed;
 
-  public JaipPromptResultCache() throws IOException {
+  public JaipPromptResultData() throws IOException {
   }
 
   public synchronized int size() {

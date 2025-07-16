@@ -33,20 +33,6 @@
               </files>
             </configuration>
           </execution>
-          <execution>
-            <id>translate-properties-to-system</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>set-system-properties</goal>
-            </goals>
-            <configuration>
-              <properties>
-                <jaip.prompt.cache.file>${jaip.prompt.cache.file}</jaip.prompt.cache.file>
-                <jaip.gemini.model>${jaip.gemini.model}</jaip.gemini.model>
-                <jaip.gemini.api.key>${jaip.gemini.api.key}</jaip.gemini.api.key>
-              </properties>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -63,6 +49,11 @@
               <keepLines>false</keepLines>
               <allowBlocks>true</allowBlocks>
               <preserveIndents>true</preserveIndents>
+              <vars>
+                <jaip.gemini.model>${jaip.gemini.model}</jaip.gemini.model>
+                <jaip.gemini.api.key>${jaip.gemini.api.key}</jaip.gemini.api.key>
+                <jaip.prompt.cache.file>${jaip.prompt.cache.file}</jaip.prompt.cache.file>
+              </vars>
             </configuration>
           </execution>
         </executions>

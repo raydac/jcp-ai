@@ -8,49 +8,38 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public final class JaipPromptCacheFile {
-  public static final String PROPERTY_JAIP_PROMPT_CACHE_FILE = "jaip.prompt.cache.file";
 
   private final Path path;
-  private final JaipPromptResultCache cache;
+  private final JaipPromptResultData cache;
 
-  private JaipPromptCacheFile(final Path path) throws IOException {
+  public JaipPromptCacheFile(final Path path) throws IOException {
     this.path = requireNonNull(path);
     String content = "[]";
-    if (Files.isRegularFile(this.path)) {
+    if (Files.isDirectory(this.path)) {
+      throw new IOException("Required a file but found a directory: " + this.path);
+    } else if (Files.isRegularFile(this.path)) {
       content = Files.readString(this.path, StandardCharsets.UTF_8);
     }
-    this.cache = new JaipPromptResultCache();
+    this.cache = new JaipPromptResultData();
     this.cache.read(new StringReader(content));
   }
 
-  public static JaipPromptCacheFile findAmongSystemProperties() throws IOException {
-    final String filePath = System.getProperty(PROPERTY_JAIP_PROMPT_CACHE_FILE, null);
-    if (filePath == null) {
-      return null;
-    } else {
-      return new JaipPromptCacheFile(Paths.get(filePath));
-    }
-  }
-
-  public JaipPromptResultCache getCache() {
+  public JaipPromptResultData getCache() {
     return this.cache;
   }
 
-  public void flush() {
-    try {
-      if (this.cache.isChanged()) {
-        final StringWriter writer = new StringWriter(16384);
-        this.cache.write(writer);
-        Files.write(this.path, writer.toString().getBytes(StandardCharsets.UTF_8),
-            StandardOpenOption.CREATE);
-      }
-    } catch (IOException ex) {
-      // ignore
+  public boolean flush() throws IOException {
+    if (this.cache.isChanged()) {
+      final StringWriter writer = new StringWriter(16384);
+      this.cache.write(writer);
+      Files.write(this.path, writer.toString().getBytes(StandardCharsets.UTF_8),
+          StandardOpenOption.CREATE);
+      return true;
     }
+    return false;
   }
 
   public Path getPath() {

@@ -4,14 +4,25 @@ import static com.igormaznitsa.jaip.common.StringUtils.JAIP_PROMPT_PREFIX;
 import static com.igormaznitsa.jaip.common.StringUtils.leftTrim;
 import static java.lang.String.join;
 
+import com.igormaznitsa.jaip.common.cache.JaipPromptCacheFile;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.CommentTextProcessor;
 import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
+import com.igormaznitsa.jcp.expression.Value;
+import com.igormaznitsa.jcp.expression.ValueType;
 import com.igormaznitsa.jcp.logger.PreprocessorLogger;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,7 +33,31 @@ import java.util.stream.Stream;
  */
 public abstract class AbstractJaipProcessor implements CommentTextProcessor {
 
+  public static final String PROPERTY_JAIP_PROMPT_CACHE = "jaip.prompt.cache.file";
+  private static final MessageDigest SHA512_DIGEST;
+  private static final MessageDigest MD5_DIGEST;
+
+  static {
+    try {
+      SHA512_DIGEST = MessageDigest.getInstance("SHA-512");
+      MD5_DIGEST = MessageDigest.getInstance("MD5");
+    } catch (Exception ex) {
+      throw new Error("Can't find or instantiate a digest provider", ex);
+    }
+  }
+
+  private final Map<File, JaipPromptCacheFile> promptFiles = new ConcurrentHashMap<>();
   private PreprocessorLogger logger;
+
+  private static String makeCachePromptKey(final String prompt) {
+    final byte[] promptBytes = prompt.getBytes(StandardCharsets.UTF_8);
+    final byte[] md5 = MD5_DIGEST.digest(promptBytes);
+    final byte[] sha512 = SHA512_DIGEST.digest(promptBytes);
+    final byte[] aggregated = new byte[md5.length + sha512.length];
+    System.arraycopy(md5, 0, aggregated, 0, md5.length);
+    System.arraycopy(sha512, 0, aggregated, md5.length, sha512.length);
+    return Base64.getEncoder().encodeToString(aggregated);
+  }
 
   protected static List<String> extreactPrefixLines(final String[] textLines) {
     return Arrays.stream(textLines).takeWhile(x -> !leftTrim(x).startsWith(JAIP_PROMPT_PREFIX))
@@ -49,9 +84,56 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
     return result;
   }
 
+  protected static Optional<Value> findPreprocessorVar(final String varName,
+                                                       final PreprocessorContext context) {
+    final Value localValue = context.getLocalVariable(varName);
+    final Value globalValue = context.getGlobalVarTable().get(varName);
+
+    Value result = null;
+    if (localValue != null) {
+      result = localValue;
+    }
+    if (globalValue != null) {
+      result = globalValue;
+    }
+    return Optional.ofNullable(result);
+  }
+
+  private static File findPromptCacheFile(final PreprocessorContext context,
+                                          final PreprocessingState state) {
+    final Value value = findPreprocessorVar(PROPERTY_JAIP_PROMPT_CACHE, context).orElse(null);
+    if (value == null) {
+      return null;
+    }
+    if (value.getType() != ValueType.STRING) {
+      throw new IllegalArgumentException(
+          "Detected non-string value for " + PROPERTY_JAIP_PROMPT_CACHE +
+              " in the preprocessor context");
+    }
+
+    final String path = value.asString();
+
+    final File pathFile = new File(path);
+    final File file;
+    if (pathFile.isAbsolute()) {
+      file = pathFile;
+    } else {
+      file = new File(state.peekFile().getFile().getParentFile(), pathFile.getPath());
+    }
+    if (context.isFileInBaseDir(file)) {
+      return file;
+    } else {
+      throw new SecurityException(
+          "Detected attempt to get access or created a prompt cache file outside of the project, check your code: "
+              + file.getAbsolutePath());
+    }
+  }
+
   @Override
   public final void onContextStarted(PreprocessorContext context) {
     this.logger = context.getPreprocessorLogger();
+    this.promptFiles.clear();
+
     logInfo("init processor");
     this.onProcessorStarted(context);
   }
@@ -89,10 +171,24 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
       final PreprocessorContext context,
       final Throwable error) {
     if (error == null) {
-      logInfo("stopping processor");
+      logInfo(
+          "stopping processor, cached prompt map contains " + this.promptFiles.size() + " file(s)");
     } else {
       logError("stopping processor with error: " + error.getMessage());
     }
+
+    this.promptFiles.values()
+        .forEach(x -> {
+          try {
+            if (x.flush()) {
+              logInfo("Written prompt cache file: " + x.getPath());
+            }
+          } catch (IOException ex) {
+            logError("Can't flush prompt cache file " + x.getPath() + " : " + ex.getMessage());
+          }
+        });
+    this.promptFiles.clear();
+
     this.onProcessorStopped(context, error);
     this.logger = null;
   }
@@ -128,19 +224,59 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
           "Unexpectedly non-equal number of extracted lines: " + uncommentedText);
     }
 
+    final File currentPromptCache = findPromptCacheFile(context, state);
+    final JaipPromptCacheFile cacheFile;
+    if (currentPromptCache == null) {
+      cacheFile = null;
+    } else {
+      cacheFile = this.promptFiles.computeIfAbsent(currentPromptCache, x -> {
+        try {
+          logInfo("registering prompt cache file: " + x);
+          return new JaipPromptCacheFile(x.toPath());
+        } catch (IOException ex) {
+          throw new RuntimeException("Can't create or open the prompt cache file for error: " + x,
+              ex);
+        }
+      });
+    }
+
     final long start = System.currentTimeMillis();
     try {
+      final String sources = positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
       return Stream.concat(
               prefix.stream(),
               Stream.concat(
                   Stream.of(join("\n", prompt))
                       .takeWhile(x -> !x.isBlank())
                       .peek(x -> logDebug("prepared prompt part: " + x))
-                      .map(x -> this.processPrompt(x,
-                          sourceFileContainer, positionInfo,
-                          context,
-                          state
-                          )
+                      .map(x -> {
+                            String response = null;
+                            final String promptKey;
+                            if (cacheFile != null) {
+                              promptKey = makeCachePromptKey(x);
+                              response = cacheFile.getCache().find(promptKey);
+                            } else {
+                              promptKey = null;
+                            }
+
+                            if (response == null) {
+                              response = this.processPrompt(x,
+                                  sourceFileContainer, positionInfo,
+                                  context,
+                                  state
+                              );
+                              if (promptKey != null) {
+                                logInfo("caching result for " + sources);
+                                cacheFile.getCache().put(promptKey, positionInfo.getFile().getName(),
+                                    positionInfo.getLineNumber(), response);
+                              }
+                            } else {
+                              logInfo("found cached prompt response for " + sources
+                                  + " in cache " + cacheFile.getPath().getFileName());
+                            }
+
+                            return response;
+                          }
                       ),
                   postfix.stream()))
           .flatMap(x -> Arrays.stream(x.split("\\R")))

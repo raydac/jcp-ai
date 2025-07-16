@@ -1,6 +1,5 @@
 package com.igormaznitsa.jaip.common;
 
-import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 
@@ -49,7 +48,7 @@ public final class StringUtils {
     return trimmed;
   }
 
-  public static String findPropertyNonNullableValue(
+  public static String findSystemPropertyNonNullableValue(
       final String property,
       final String defaultValue
   ) {
