@@ -42,13 +42,13 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
 
   private JaipPromptCacheFile jaipPromptCacheFile;
 
-  private static final MessageDigest MD5_DIGEST;
+  private static final MessageDigest SHA512_DIGEST;
 
   static {
     try {
-      MD5_DIGEST = MessageDigest.getInstance("MD5");
+      SHA512_DIGEST = MessageDigest.getInstance("SHA-512");
     } catch (Exception ex) {
-      throw new Error("Can't find MD5 digest", ex);
+      throw new Error("Can't find SHA-256 digest", ex);
     }
   }
 
@@ -73,13 +73,18 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
         .build();
   }
 
+  private static String makeKey(final String model, final String prompt) {
+    return Base64.getEncoder()
+        .encodeToString(SHA512_DIGEST.digest((model + prompt).getBytes(StandardCharsets.UTF_8)));
+  }
+
   @Override
-  public String getName() {
+  public String getProcessorTextId() {
     return "GEMINI";
   }
 
   @Override
-  protected void doContextStarted(PreprocessorContext context) {
+  protected void onProcessorStarted(PreprocessorContext context) {
     this.geminiModel = findPropertyNonNullableValue(PROPERTY_GEMINI_MODEL, null);
     logInfo("required model: " + this.geminiModel);
 
@@ -140,7 +145,7 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
   }
 
   @Override
-  protected void doContextStopped(PreprocessorContext context, Throwable error) {
+  protected void onProcessorStopped(PreprocessorContext context, Throwable error) {
     try {
       this.client.close();
     } finally {
@@ -152,24 +157,19 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
     }
   }
 
-  private static String makeKey(final String model, final String prompt) {
-    return Base64.getEncoder()
-        .encodeToString(MD5_DIGEST.digest((model + prompt).getBytes(StandardCharsets.UTF_8)));
-  }
-
   @Override
-  public String doRequestForPrompt(
+  public String processPrompt(
       final String prompt,
-      final FilePositionInfo filePositionInfo,
-      final FileInfoContainer fileInfoContainer,
+      final FileInfoContainer sourceFileContainer, final FilePositionInfo positionInfo,
       final PreprocessorContext context,
-      final PreprocessingState preprocessingState) {
+      final PreprocessingState state) {
     final String cacheKey = makeKey(this.geminiModel, prompt);
 
     String result = this.jaipPromptCacheFile == null ? null :
         this.jaipPromptCacheFile.getCache().find(cacheKey);
 
-    final String preprocessedFilePosition = filePositionInfo.getFile().getName() + ':' + filePositionInfo.getLineNumber();
+    final String preprocessedFilePosition =
+        positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
     if (result == null) {
       final long start = System.currentTimeMillis();
       RuntimeException exception = null;
@@ -205,7 +205,7 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
         }
 
         this.jaipPromptCacheFile.getCache()
-            .put(cacheKey, filePositionInfo.getFile().getName(), filePositionInfo.getLineNumber(),
+            .put(cacheKey, positionInfo.getFile().getName(), positionInfo.getLineNumber(),
                 result);
         this.jaipPromptCacheFile.flush();
       } catch (RuntimeException ex) {

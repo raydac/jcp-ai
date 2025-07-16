@@ -15,6 +15,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Abstract processor to prepare answer from a prompt.
+ *
+ * @since 1.0.0
+ */
 public abstract class AbstractJaipProcessor implements CommentTextProcessor {
 
   private PreprocessorLogger logger;
@@ -47,72 +52,80 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
   @Override
   public final void onContextStarted(PreprocessorContext context) {
     this.logger = context.getPreprocessorLogger();
-    logInfo("Init client");
-    this.doContextStarted(context);
+    logInfo("init processor");
+    this.onProcessorStarted(context);
   }
 
   protected void logInfo(String text) {
     if (this.logger != null) {
-      this.logger.info(this.getName() + ": " + text);
+      this.logger.info(this.getProcessorTextId() + ": " + text);
     }
   }
 
   protected void logDebug(String text) {
     if (this.logger != null) {
-      this.logger.debug(this.getName() + ": " + text);
+      this.logger.debug(this.getProcessorTextId() + ": " + text);
     }
   }
 
   protected void logError(String text) {
     if (this.logger != null) {
-      this.logger.error(this.getName() + ": " + text);
+      this.logger.error(this.getProcessorTextId() + ": " + text);
     }
   }
 
   protected void logWarn(String text) {
     if (this.logger != null) {
-      this.logger.warning(this.getName() + ": " + text);
+      this.logger.warning(this.getProcessorTextId() + ": " + text);
     }
   }
 
-  protected void doContextStarted(PreprocessorContext context) {
+  protected void onProcessorStarted(PreprocessorContext context) {
 
   }
 
   @Override
-  public final void onContextStopped(PreprocessorContext context, Throwable error) {
-    logInfo("Stopping client");
-    this.doContextStopped(context, error);
+  public final void onContextStopped(
+      final PreprocessorContext context,
+      final Throwable error) {
+    if (error == null) {
+      logInfo("stopping processor");
+    } else {
+      logError("stopping processor with error: " + error.getMessage());
+    }
+    this.onProcessorStopped(context, error);
     this.logger = null;
   }
 
-  protected void doContextStopped(
+  protected void onProcessorStopped(
       PreprocessorContext context,
       Throwable error) {
 
   }
 
   @Override
-  public String onUncommentText(
-      int firstLineIndent,
-      String text,
-      FilePositionInfo filePositionInfo,
-      FileInfoContainer fileInfoContainer,
-      PreprocessorContext preprocessorContext,
-      PreprocessingState preprocessingState) {
-    logDebug("Incoming potential prompt: " + text);
+  public final String processUncommentedText(
+      final int recommendedIndent,
+      final String uncommentedText,
+      final FileInfoContainer sourceFileContainer,
+      final FilePositionInfo positionInfo,
+      final PreprocessorContext context,
+      final PreprocessingState state
+  ) {
+    logDebug("Incoming potential prompt: " + uncommentedText);
 
-    final String[] lines = text.split("\\R");
+    final String[] lines = uncommentedText.split("\\R");
 
     final String indent =
-        preprocessorContext.isPreserveIndents() ? " ".repeat(firstLineIndent) : "";
+        context.isPreserveIndents() ? " ".repeat(recommendedIndent) : "";
 
     final List<String> prefix = extreactPrefixLines(lines);
     final List<String> prompt = extreactPrompt(prefix, lines);
     final List<String> postfix = extreactPostfixLines(prefix, prompt, lines);
 
     if (prefix.size() + prompt.size() + postfix.size() != lines.length) {
-      throw new IllegalStateException("Unexpectedly non-equal number of extracted lines: " + text);
+      throw new IllegalStateException(
+          "Unexpectedly non-equal number of extracted lines: " + uncommentedText);
     }
 
     final long start = System.currentTimeMillis();
@@ -123,29 +136,45 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
                   Stream.of(join("\n", prompt))
                       .takeWhile(x -> !x.isBlank())
                       .peek(x -> logDebug("prepared prompt part: " + x))
-                      .map(x -> this.doRequestForPrompt(x,
-                              filePositionInfo,
-                              fileInfoContainer,
-                              preprocessorContext,
-                              preprocessingState
+                      .map(x -> this.processPrompt(x,
+                          sourceFileContainer, positionInfo,
+                          context,
+                          state
                           )
                       ),
                   postfix.stream()))
           .flatMap(x -> Arrays.stream(x.split("\\R")))
           .map(x -> indent + x)
           .collect(
-              Collectors.joining(preprocessorContext.getEol(), "", preprocessorContext.getEol()));
+              Collectors.joining(context.getEol(), "", context.getEol()));
     } finally {
       this.logDebug("completed prompt, spent " + (System.currentTimeMillis() - start) + "ms");
     }
   }
 
-  public abstract String doRequestForPrompt(
+  /**
+   * Process prompt and generate text to replace the prompt in sources.
+   *
+   * @param prompt              the prompt text, must not be null
+   * @param sourceFileContainer the source file container processing the source file, must not be null
+   * @param positionInfo        the text position in the source file, must not be null, if it is the text block then the first text block line as the position.
+   * @param context             the current preprocessor context, must not be null
+   * @param state               the current preprocessor state, must not be null
+   * @return the generated response as single line or multi-line text, must not be null
+   * @since 1.0.0
+   */
+  public abstract String processPrompt(
       String prompt,
-      FilePositionInfo filePositionInfo,
-      FileInfoContainer fileInfoContainer,
-      PreprocessorContext preprocessorContext,
-      PreprocessingState preprocessingState);
+      FileInfoContainer sourceFileContainer,
+      FilePositionInfo positionInfo,
+      PreprocessorContext context,
+      PreprocessingState state);
 
-  public abstract String getName();
+  /**
+   * Get the processor text id. It will be used as log prefix and in other operations requiring id of the processor.
+   *
+   * @return the processor name, must not be null
+   * @since 1.0.0
+   */
+  public abstract String getProcessorTextId();
 }
