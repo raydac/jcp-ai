@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
 
-public class GeminiProcessorService extends AbstractJaipProcessor {
+public class GeminiJaipProcessor extends AbstractJaipProcessor {
 
   public static final String PROPERTY_GEMINI_MODEL = "jaip.gemini.model";
   public static final String PROPERTY_GEMINI_PROJECT_ID = "jaip.gemini.project.id";
@@ -35,24 +35,22 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
       "jaip.gemini.client.http.config.json";
   public static final String PROPERTY_GEMINI_CLIENT_OPTIONS_JSON =
       "jaip.gemini.client.options.json";
-
-  private Client client;
-  private String geminiModel;
-  private GenerateContentConfig geminiGenerateContentConfig;
-
-  private JaipPromptCacheFile jaipPromptCacheFile;
-
   private static final MessageDigest SHA512_DIGEST;
 
   static {
     try {
       SHA512_DIGEST = MessageDigest.getInstance("SHA-512");
     } catch (Exception ex) {
-      throw new Error("Can't find SHA-256 digest", ex);
+      throw new Error("Can't find SHA-512 digest", ex);
     }
   }
 
-  public GeminiProcessorService() {
+  private Client client;
+  private String geminiModel;
+  private GenerateContentConfig geminiGenerateContentConfig;
+  private JaipPromptCacheFile jaipPromptCacheFile;
+
+  public GeminiJaipProcessor() {
     super();
   }
 
@@ -192,8 +190,6 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
           throw new IllegalStateException("unexpectedly returned null as response text");
         }
 
-        this.logInfo("got generated response " + result.length() + " char(s)");
-
         if (Boolean.getBoolean(PROPERTY_GEMINI_DISABLE_NORMALIZE_RESPONSE)) {
           logWarn("response normalize disabled");
         } else {
@@ -216,8 +212,12 @@ public class GeminiProcessorService extends AbstractJaipProcessor {
           logError("can't get response for " + preprocessedFilePosition + " for error: " +
               exception.getMessage());
         } else {
-          logInfo("got response for " + preprocessedFilePosition + ", spent " +
-              (System.currentTimeMillis() - start) + " ms");
+          logInfo(String.format(
+              "got response for %s, length %d char(S), spent %d ms",
+              preprocessedFilePosition,
+              result == null ? -1 : result.length(),
+              System.currentTimeMillis() - start)
+          );
         }
       }
     } else {
