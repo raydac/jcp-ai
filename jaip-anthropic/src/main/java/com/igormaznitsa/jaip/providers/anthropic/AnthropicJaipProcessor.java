@@ -30,7 +30,7 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
     super();
   }
 
-  private MessageCreateParams makeMessage(
+  private static MessageCreateParams makeMessage(
       final String model,
       final long maxTokens,
       final String message) {
@@ -98,6 +98,10 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
 
       logInfo(String.format("sending prompt from %s, model is %s, max tokens %d", sources,
           (model == null ? "DEFAULT" : model), maxTokens));
+
+      final MessageCreateParams message = makeMessage(model, maxTokens, prompt);
+      this.logDebug("Message create params: " + message);
+
       response =
           client.messages().create(makeMessage(model, maxTokens, prompt));
 
@@ -109,13 +113,13 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
     String result =
         response.content().stream().map(x -> x.text().map(TextBlock::text).orElse("")).collect(
             Collectors.joining(context.getEol()));
-
-    this.logDebug("RESULT\n-------------\n" + result + "\n-------------");
+    this.logDebug("RESPONSE\n-------------\n" + result + "\n-------------");
 
     this.logInfo(
         String.format("got response for the prompt at %s, spent %d ms, response %d char(s)",
             sources, spent, result.length()));
     result = normalizeJavaResponse(result);
+
     if (result.isBlank()) {
       throw new IllegalStateException(
           "Can't find code content in the result of request at " + sources);
