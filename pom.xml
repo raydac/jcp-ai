@@ -29,6 +29,7 @@
     <modules>
         <module>jaip-commons</module>
         <module>jaip-gemini</module>
+        <module>jaip-anthropic</module>
     </modules>
 
     <developers>

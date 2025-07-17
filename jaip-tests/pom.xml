@@ -17,6 +17,7 @@
 
     <modules>
         <module>jaip-test-gemini</module>
+        <module>jaip-test-anthropics</module>
     </modules>
 
     <dependencies>
