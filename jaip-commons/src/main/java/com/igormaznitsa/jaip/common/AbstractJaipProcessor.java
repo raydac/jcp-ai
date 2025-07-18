@@ -2,7 +2,7 @@ package com.igormaznitsa.jaip.common;
 
 import static com.igormaznitsa.jaip.common.StringUtils.JAIP_PROMPT_PREFIX;
 import static com.igormaznitsa.jaip.common.StringUtils.leftTrim;
-import static java.lang.String.join;
+import static java.util.stream.Collectors.joining;
 
 import com.igormaznitsa.jaip.common.cache.JaipPromptCacheFile;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
@@ -17,14 +17,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Abstract processor to prepare answer from a prompt.
@@ -49,8 +47,9 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
   private final Map<File, JaipPromptCacheFile> promptFiles = new ConcurrentHashMap<>();
   private PreprocessorLogger logger;
 
-  private static String makeCachePromptKey(final String prompt) {
-    final byte[] promptBytes = prompt.getBytes(StandardCharsets.UTF_8);
+  private static String makeCachePromptKey(final List<String> prompt) {
+    final String normalized = String.join("\n", prompt);
+    final byte[] promptBytes = normalized.getBytes(StandardCharsets.UTF_8);
     final byte[] md5 = MD5_DIGEST.digest(promptBytes);
     final byte[] sha512 = SHA512_DIGEST.digest(promptBytes);
     final byte[] aggregated = new byte[md5.length + sha512.length];
@@ -59,28 +58,44 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
     return Base64.getEncoder().encodeToString(aggregated);
   }
 
-  protected static List<String> extreactPrefixLines(final String[] textLines) {
-    return Arrays.stream(textLines).takeWhile(x -> !leftTrim(x).startsWith(JAIP_PROMPT_PREFIX))
-        .collect(Collectors.toList());
-  }
+  private static List<TextBlock> splitToTextBlocks(final FilePositionInfo startLinePosition,
+                                                   final String[] textLines) {
+    final List<TextBlock> result = new ArrayList<>();
 
-  protected static List<String> extreactPrompt(final List<String> prefix,
-                                               final String[] textLines) {
-    return Arrays.stream(textLines).skip(prefix.size())
-        .map(StringUtils::leftTrim)
-        .takeWhile(x -> x.startsWith(JAIP_PROMPT_PREFIX))
-        .map(x -> x.substring(JAIP_PROMPT_PREFIX.length()))
-        .collect(Collectors.toList());
-  }
+    final List<String> jaipLines = new ArrayList<>();
+    final List<String> justLines = new ArrayList<>();
 
-  protected static List<String> extreactPostfixLines(final List<String> prefix,
-                                                     final List<String> prompt,
-                                                     final String[] textLines) {
-    final List<String> result = Arrays.stream(textLines).skip(prefix.size() + prompt.size())
-        .collect(Collectors.toList());
-    if (result.stream().anyMatch(x -> leftTrim(x).startsWith(JAIP_PROMPT_PREFIX))) {
-      throw new IllegalArgumentException("Detected unexpected mix of prompt and postfix lines");
+    int stringLineIndex = 0;
+    FilePositionInfo position = startLinePosition;
+    for (final String line : textLines) {
+      final String leftTrim = leftTrim(line);
+      if (leftTrim.startsWith(JAIP_PROMPT_PREFIX)) {
+        if (!justLines.isEmpty()) {
+          result.add(new JustTextBlock(justLines, position));
+          justLines.clear();
+          position = new FilePositionInfo(position.getFile(),
+              startLinePosition.getStringIndex() + stringLineIndex);
+        }
+        jaipLines.add(leftTrim.substring(JAIP_PROMPT_PREFIX.length()));
+      } else {
+        if (!jaipLines.isEmpty()) {
+          result.add(new JaipPrompt(jaipLines, position));
+          jaipLines.clear();
+          position = new FilePositionInfo(position.getFile(),
+              startLinePosition.getStringIndex() + stringLineIndex);
+        }
+        justLines.add(leftTrim.substring(JAIP_PROMPT_PREFIX.length()));
+      }
+      stringLineIndex++;
     }
+
+    if (!justLines.isEmpty()) {
+      result.add(new JustTextBlock(justLines, position));
+    }
+    if (!jaipLines.isEmpty()) {
+      result.add(new JaipPrompt(jaipLines, position));
+    }
+
     return result;
   }
 
@@ -215,14 +230,7 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
     final String indent =
         context.isPreserveIndents() ? " ".repeat(recommendedIndent) : "";
 
-    final List<String> prefix = extreactPrefixLines(lines);
-    final List<String> prompt = extreactPrompt(prefix, lines);
-    final List<String> postfix = extreactPostfixLines(prefix, prompt, lines);
-
-    if (prefix.size() + prompt.size() + postfix.size() != lines.length) {
-      throw new IllegalStateException(
-          "Unexpectedly non-equal number of extracted lines: " + uncommentedText);
-    }
+    final List<TextBlock> detectedTextBlocks = splitToTextBlocks(positionInfo, lines);
 
     final File currentPromptCache = findPromptCacheFile(context, state);
     final JaipPromptCacheFile cacheFile;
@@ -243,46 +251,41 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
     final long start = System.currentTimeMillis();
     try {
       final String sources = positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
-      return Stream.concat(
-              prefix.stream(),
-              Stream.concat(
-                  Stream.of(join("\n", prompt))
-                      .takeWhile(x -> !x.isBlank())
-                      .peek(x -> logDebug("prepared prompt part: " + x))
-                      .map(x -> {
-                            String response = null;
-                            final String promptKey;
-                            if (cacheFile != null) {
-                              promptKey = makeCachePromptKey(x);
-                              response = cacheFile.getCache().find(promptKey);
-                            } else {
-                              promptKey = null;
-                            }
+      final List<String> resultLines = new ArrayList<>();
+      for (final TextBlock block : detectedTextBlocks) {
+        if (block instanceof JustTextBlock) {
+          resultLines.addAll(block.lines);
+        } else if (block instanceof JaipPrompt) {
+          final String promptKey;
+          String cachedResponse = null;
+          if (cacheFile != null) {
+            promptKey = makeCachePromptKey(block.lines);
+            cachedResponse = cacheFile.getCache().find(promptKey);
+          } else {
+            promptKey = null;
+          }
 
-                            if (response == null) {
-                              response = this.processPrompt(x,
-                                  sourceFileContainer, positionInfo,
-                                  context,
-                                  state
-                              );
-                              if (promptKey != null) {
-                                logInfo("caching result for " + sources);
-                                cacheFile.getCache().put(promptKey, positionInfo.getFile().getName(),
-                                    positionInfo.getLineNumber(), response);
-                              }
-                            } else {
-                              logInfo("found cached prompt response for " + sources
-                                  + " in cache " + cacheFile.getPath().getFileName());
-                            }
-
-                            return response;
-                          }
-                      ),
-                  postfix.stream()))
-          .flatMap(x -> Arrays.stream(x.split("\\R")))
-          .map(x -> indent + x)
-          .collect(
-              Collectors.joining(context.getEol(), "", context.getEol()));
+          if (cachedResponse == null) {
+            final List<String> responseLines = List.of(this.processPrompt(block.asString("\n"),
+                sourceFileContainer, block.positionInfo,
+                context,
+                state
+            ).split("\\R"));
+            if (promptKey != null) {
+              logInfo("caching result for " + sources);
+              cacheFile.getCache().put(promptKey, block.positionInfo.getFile().getName(),
+                  block.positionInfo.getLineNumber(), String.join("\n", responseLines));
+            }
+            resultLines.addAll(responseLines);
+          } else {
+            resultLines.addAll(List.of(cachedResponse.split("\\R")));
+            logInfo("found cached prompt response for " + sources
+                + " in cache " + cacheFile.getPath().getFileName());
+          }
+        }
+      }
+      return resultLines.stream().map(x -> context.isPreserveIndents() ? indent + x : x)
+          .collect(joining(context.getEol(), "", context.getEol()));
     } finally {
       this.logDebug("completed prompt, spent " + (System.currentTimeMillis() - start) + "ms");
     }
@@ -313,4 +316,30 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
    * @since 1.0.0
    */
   public abstract String getProcessorTextId();
+
+  private static final class JustTextBlock extends TextBlock {
+    JustTextBlock(final List<String> text, final FilePositionInfo positionInfo) {
+      super(text, positionInfo);
+    }
+  }
+
+  private static final class JaipPrompt extends TextBlock {
+    JaipPrompt(final List<String> text, final FilePositionInfo positionInfo) {
+      super(text, positionInfo);
+    }
+  }
+
+  private abstract static class TextBlock {
+    final List<String> lines;
+    final FilePositionInfo positionInfo;
+
+    TextBlock(final List<String> lines, final FilePositionInfo positionInfo) {
+      this.lines = List.copyOf(lines);
+      this.positionInfo = positionInfo;
+    }
+
+    String asString(final String eol) {
+      return String.join(eol, this.lines);
+    }
+  }
 }
