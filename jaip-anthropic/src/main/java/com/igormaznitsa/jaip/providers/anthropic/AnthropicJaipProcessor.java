@@ -112,7 +112,7 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
 
     String result =
         response.content().stream().map(x -> x.text().map(TextBlock::text).orElse("")).collect(
-            Collectors.joining(context.getEol()));
+            Collectors.joining("\n"));
     this.logDebug("RESPONSE\n-------------\n" + result + "\n-------------");
 
     this.logInfo(

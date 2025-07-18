@@ -107,7 +107,16 @@ public class GeminiJaipProcessor extends AbstractJaipProcessor {
     }
     final long spent = System.currentTimeMillis() - start;
 
-    String result = response.text();
+    final String executableCode = response.executableCode();
+    String result;
+    if (executableCode == null) {
+      result = response.text();
+    } else {
+      logDebug("detected executable code with text: " + response.text());
+      result = executableCode;
+    }
+    this.logDebug("SELECTED RESPONSE\n-------------\n" + result + "\n-------------");
+
     if (result == null) {
       throw new NullPointerException("Unexpectedly returned null as response text at " + sources);
     }
