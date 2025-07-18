@@ -84,7 +84,7 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
           position = new FilePositionInfo(position.getFile(),
               startLinePosition.getStringIndex() + stringLineIndex);
         }
-        justLines.add(leftTrim.substring(JAIP_PROMPT_PREFIX.length()));
+        justLines.add(line);
       }
       stringLineIndex++;
     }

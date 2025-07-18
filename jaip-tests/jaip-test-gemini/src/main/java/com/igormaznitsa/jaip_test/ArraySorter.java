@@ -2,6 +2,7 @@ package com.igormaznitsa.jaip_test;
 
 public class ArraySorter {
 
+  //$"""//AI generated section
   //$"""JAIP> code level is Java /*$mvn.project.property.maven.compiler.release$*/
   //$"""JAIP> generate method implements fastest sort algorithm with minimal memory overhead, the speed is priority:
   //$"""JAIP>     public static int [] fastSort(final int [] array, final boolean asc)
