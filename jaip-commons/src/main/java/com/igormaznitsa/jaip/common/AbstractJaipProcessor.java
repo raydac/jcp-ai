@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractJaipProcessor implements CommentTextProcessor {
 
   public static final String PROPERTY_JAIP_PROMPT_CACHE = "jaip.prompt.cache.file";
+  public static final String PROPERTY_JAIP_ONLY_PROCESSOR = "jaip.only.model";
   private static final MessageDigest SHA512_DIGEST;
   private static final MessageDigest MD5_DIGEST;
 
@@ -228,7 +229,7 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
     final String[] lines = uncommentedText.split("\\R");
 
     final String indent =
-        context.isPreserveIndents() ? " ".repeat(recommendedIndent) : "";
+        context.isPreserveIndents() ? " " .repeat(recommendedIndent) : "";
 
     final List<TextBlock> detectedTextBlocks = splitToTextBlocks(positionInfo, lines);
 
@@ -288,6 +289,27 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
           .collect(joining(context.getEol(), "", context.getEol()));
     } finally {
       this.logDebug("completed prompt, spent " + (System.currentTimeMillis() - start) + "ms");
+    }
+  }
+
+  @Override
+  public boolean isEnabled(
+      final FileInfoContainer fileInfoContainer,
+      final FilePositionInfo filePositionInfo,
+      final PreprocessorContext preprocessorContext,
+      final PreprocessingState preprocessingState) {
+    final Value modelName =
+        findPreprocessorVar(PROPERTY_JAIP_ONLY_PROCESSOR, preprocessorContext).orElse(null);
+    if (modelName == null) {
+      return true;
+    } else {
+      final boolean enabled = modelName.asString().equalsIgnoreCase(this.getProcessorTextId());
+      if (!enabled) {
+        logDebug("processor disabled for " + filePositionInfo.getFile().getName() + ':' +
+            filePositionInfo.getLineNumber() + " by " + PROPERTY_JAIP_ONLY_PROCESSOR + "=" +
+            modelName.asString());
+      }
+      return enabled;
     }
   }
 

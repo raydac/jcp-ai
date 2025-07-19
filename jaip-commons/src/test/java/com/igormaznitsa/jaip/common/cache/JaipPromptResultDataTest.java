@@ -2,7 +2,6 @@ package com.igormaznitsa.jaip.common.cache;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Test;
@@ -10,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class JaipPromptResultDataTest {
 
   @Test
-  void testPutGet() throws IOException {
+  void testPutGet() throws Exception {
     final JaipPromptResultData cache = new JaipPromptResultData();
 
     cache.put("key1", "test.java", 1,"test 1");
@@ -20,6 +19,8 @@ class JaipPromptResultDataTest {
 
     final StringWriter writer = new StringWriter();
     cache.write(writer);
+
+    //System.out.println(writer.toString());
 
     final JaipPromptResultData cache2 = new JaipPromptResultData();
     cache2.read(new StringReader(writer.toString()));

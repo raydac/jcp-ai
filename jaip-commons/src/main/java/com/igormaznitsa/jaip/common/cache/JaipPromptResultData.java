@@ -2,23 +2,17 @@ package com.igormaznitsa.jaip.common.cache;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.gson.FormattingStyle;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.UUID;
+import org.hisp.dhis.jsontree.Json;
+import org.hisp.dhis.jsontree.JsonArray;
+import org.hisp.dhis.jsontree.JsonMixed;
 
 public class JaipPromptResultData {
-
-  private static final Gson GSON = new GsonBuilder()
-      .setFormattingStyle(FormattingStyle.PRETTY)
-      .registerTypeAdapter(Instant.class, InstantJsonSerde.INSTANCE)
-      .registerTypeAdapter(UUID.class, UuidJsonSerde.INSTANCE)
-      .create();
 
   private final LinkedHashMap<String, JaipCacheRecord> records = new LinkedHashMap<>();
   private boolean changed;
@@ -32,11 +26,13 @@ public class JaipPromptResultData {
 
   public synchronized void read(final Reader reader) {
     this.records.clear();
-    final JaipCacheRecord[] array = GSON.fromJson(reader, JaipCacheRecord[].class);
-    for (final JaipCacheRecord r : array) {
-      this.records.put(r.getKey(), r);
+    final JsonMixed mixed = JsonMixed.of(reader);
+    if (mixed.isArray()) {
+      mixed.stream().map(JaipCacheRecord::new).forEach(x -> {
+        this.records.put(x.getKey(), x);
+      });
     }
-    this.changed = false;
+    this.changed = !this.records.isEmpty();
   }
 
   public synchronized String find(final String key) {
@@ -44,7 +40,8 @@ public class JaipPromptResultData {
     return record == null ? null : record.getResult();
   }
 
-  public synchronized void put(final String key, final String fileName, final int line, final String response) {
+  public synchronized void put(final String key, final String fileName, final int line,
+                               final String response) {
     this.changed = true;
 
     final JaipCacheRecord newRecord = new JaipCacheRecord();
@@ -70,8 +67,10 @@ public class JaipPromptResultData {
   }
 
   public synchronized void write(final Writer writer) throws IOException {
-    final JaipCacheRecord[] array = this.records.values().toArray(JaipCacheRecord[]::new);
-    GSON.toJson(array, writer);
+    final JsonArray array = Json.array(x -> this.records.values().stream().map(
+            JaipCacheRecord::toJsonNode)
+        .forEach(x::addElement));
+    writer.write(array.toJson());
     writer.flush();
   }
 }

@@ -151,7 +151,6 @@
                     <plugin>
                         <groupId>net.nicoulaj.maven.plugins</groupId>
                         <artifactId>checksum-maven-plugin</artifactId>
-                        <version>1.11</version>
                         <executions>
                             <execution>
                                 <phase>verify</phase>
@@ -208,7 +207,6 @@
             <plugin>
                 <groupId>com.igormaznitsa</groupId>
                 <artifactId>uber-pom</artifactId>
-                <version>1.0.3</version>
                 <configuration>
                     <removeDependencies>
                         <dependency>
@@ -243,6 +241,14 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.igormaznitsa.jaip.common</pattern>
+                                    <shadedPattern>com.igormaznitsa.jaip.anthropic.hidden.jaip.common</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -26,9 +26,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.13.1</version>
+            <groupId>org.hisp.dhis</groupId>
+            <artifactId>json-tree</artifactId>
+            <version>1.8.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -59,8 +59,8 @@
                         <configuration>
                             <relocations>
                                 <relocation>
-                                    <pattern>com.google</pattern>
-                                    <shadedPattern>hidden.com.google</shadedPattern>
+                                    <pattern>org.hisp</pattern>
+                                    <shadedPattern>com.igormaznitsa.jaip.common.hidden.org.hisp</shadedPattern>
                                 </relocation>
                             </relocations>
                             <artifactSet>
@@ -72,6 +72,8 @@
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
+                                        <exclude>META-INF/maven/org.hisp.dhis/json-tree/pom.properties</exclude>
+                                        <exclude>META-INF/maven/org.hisp.dhis/json-tree/pom.xml</exclude>
                                         <exclude>META-INF/LICENSE.txt</exclude>
                                         <exclude>META-INF/NOTICE.txt</exclude>
                                         <exclude>META-INF/MANIFEST.MF</exclude>
@@ -91,7 +93,6 @@
             <plugin>
                 <groupId>com.igormaznitsa</groupId>
                 <artifactId>uber-pom</artifactId>
-                <version>1.0.3</version>
                 <configuration>
                     <removeDependencies>
                         <dependency>
