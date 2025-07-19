@@ -30,6 +30,7 @@
         <module>jaip-commons</module>
         <module>jaip-gemini</module>
         <module>jaip-anthropic</module>
+        <module>jaip-openai</module>
     </modules>
 
     <developers>

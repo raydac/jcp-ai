@@ -18,6 +18,7 @@
     <modules>
         <module>jaip-test-gemini</module>
         <module>jaip-test-anthropics</module>
+        <module>jaip-test-openai</module>
     </modules>
 
     <dependencies>
