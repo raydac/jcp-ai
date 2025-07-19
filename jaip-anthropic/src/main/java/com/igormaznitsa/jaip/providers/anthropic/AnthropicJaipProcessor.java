@@ -14,33 +14,36 @@ import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
-import com.igormaznitsa.jcp.expression.ValueType;
 import java.util.stream.Collectors;
 
 public class AnthropicJaipProcessor extends AbstractJaipProcessor {
 
   public static final String PROPERTY_ANTHROPIC_MODEL = "jaip.anthropic.model";
-  public static final String PROPERTY_ANTHROPIC_MAX_TOKENS = "jaip.anthropic.max.tokens";
   public static final String PROPERTY_ANTHROPIC_AUTH_TOKEN = "jaip.anthropic.auth.token";
   public static final String PROPERTY_ANTHROPIC_API_KEY = "jaip.anthropic.api.key";
   public static final String PROPERTY_ANTHROPIC_BASE_URL = "jaip.anthropic.base.url";
-  public static final long MAX_TOKENS_BY_DEFAULT = 4096;
 
   public AnthropicJaipProcessor() {
     super();
   }
 
-  private static MessageCreateParams makeMessage(
+  private MessageCreateParams makeMessage(
+      final PreprocessorContext context,
       final String model,
-      final long maxTokens,
-      final String message) {
-    var builder = MessageCreateParams.builder()
-        .temperature(0.1f)
-        .topP(0.95f)
-        .maxTokens(maxTokens)
-        .system(
-            "You are a highly skilled senior software engineer with deep expertise in algorithms and advanced Java development, including core Java concepts and best practices. Respond with precise, efficient, and idiomatic Java solutions, and explain your reasoning when needed.")
-        .addUserMessage(message);
+      final String prompt) {
+    var builder = MessageCreateParams.builder();
+
+    this.findParamTemperature(context)
+        .ifPresentOrElse(builder::temperature, () -> builder.temperature(0.15f));
+    this.findParamTopP(context).ifPresent(builder::topP);
+    this.findParamTopK(context).map(Float::longValue).ifPresent(builder::topK);
+
+    this.findParamInstructionSystem(context)
+        .ifPresentOrElse(builder::system, () -> builder.system(DEFAULT_SYSTEM_INSTRUCTION));
+    this.findParamMaxTokens(context)
+        .ifPresentOrElse(builder::maxTokens, () -> builder.maxTokens(4096));
+
+    builder.addUserMessage(prompt);
 
     if (model != null) {
       builder.model(model);
@@ -86,24 +89,13 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
     try {
       final String model = findPreprocessorVar(PROPERTY_ANTHROPIC_MODEL, context).map(
           Value::asString).orElse(null);
-      final long maxTokens = findPreprocessorVar(PROPERTY_ANTHROPIC_MAX_TOKENS, context)
-          .map(x -> {
-            if (x.getType() != ValueType.INT) {
-              throw new IllegalArgumentException(
-                  "expected integer value for " + PROPERTY_ANTHROPIC_MAX_TOKENS + " but found " +
-                      x.getType() + " : " + x.asString());
-            }
-            return x.asLong();
-          }).orElse(MAX_TOKENS_BY_DEFAULT);
 
-      logInfo(String.format("sending prompt from %s, model is %s, max tokens %d", sources,
-          (model == null ? "DEFAULT" : model), maxTokens));
-
-      final MessageCreateParams message = makeMessage(model, maxTokens, prompt);
+      final MessageCreateParams message = makeMessage(context, model, prompt);
       this.logDebug("Message create params: " + message);
-
+      logInfo(String.format("sending prompt from %s, model is %s, max tokens %d", sources,
+          message.model().asString(), message.maxTokens()));
       response =
-          client.messages().create(makeMessage(model, maxTokens, prompt));
+          client.messages().create(makeMessage(context, model, prompt));
 
     } finally {
       client.close();

@@ -31,8 +31,18 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class AbstractJaipProcessor implements CommentTextProcessor {
 
+  public static final String DEFAULT_SYSTEM_INSTRUCTION =
+      "You are a highly skilled senior software engineer with deep expertise in algorithms and advanced Java development, including core Java concepts and best practices. Respond with precise, efficient, and idiomatic Java solutions, and explain your reasoning when needed.";
+
   public static final String PROPERTY_JAIP_PROMPT_CACHE = "jaip.prompt.cache.file";
-  public static final String PROPERTY_JAIP_ONLY_PROCESSOR = "jaip.only.model";
+  public static final String PROPERTY_JAIP_ONLY_PROCESSOR = "jaip.prompt.only.processor";
+  public static final String PROPERTY_JAIP_TEMPERATURE = "jaip.prompt.temperature";
+  public static final String PROPERTY_JAIP_TOP_P = "jaip.prompt.top.p";
+  public static final String PROPERTY_JAIP_TOP_K = "jaip.prompt.top.k";
+  public static final String PROPERTY_JAIP_SEED = "jaip.prompt.seed";
+  public static final String PROPERTY_JAIP_MAX_TOKENS = "jaip.prompt.max.tokens";
+  public static final String PROPERTY_JAIP_INSTRUCTION_SYSTEM = "jaip.prompt.instruction.system";
+
   private static final MessageDigest SHA512_DIGEST;
   private static final MessageDigest MD5_DIGEST;
 
@@ -113,6 +123,85 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
       result = globalValue;
     }
     return Optional.ofNullable(result);
+  }
+
+  private static Optional<Float> findPreprocessorFloatVariable(final String variable,
+                                                               final PreprocessorContext context) {
+    final Value value = findPreprocessorVar(variable, context).orElse(null);
+    if (value == null) {
+      return Optional.empty();
+    }
+    if (value.getType() == ValueType.INT) {
+      return Optional.of((float) value.asLong());
+    }
+    if (value.getType() == ValueType.FLOAT) {
+      return Optional.of(value.asFloat());
+    }
+    if (value.getType() == ValueType.STRING) {
+      try {
+        return Optional.of(Float.parseFloat(value.asString().trim()));
+      } catch (NumberFormatException ex) {
+        throw new IllegalArgumentException(
+            "Detected non-float value for " + variable + " : " + value);
+      }
+    }
+    throw new IllegalArgumentException("Unexpected value for float " + variable + " : " + value);
+  }
+
+  private static Optional<String> findPreprocessorStringVariable(final String variable,
+                                                                 final PreprocessorContext context) {
+    final Value value = findPreprocessorVar(variable, context).orElse(null);
+    if (value == null) {
+      return Optional.empty();
+    }
+    return Optional.of(value.asString());
+  }
+
+  private static Optional<Long> findPreprocessorLongVariable(final String varName,
+                                                             final PreprocessorContext context) {
+    final Value value = findPreprocessorVar(varName, context).orElse(null);
+    if (value == null) {
+      return Optional.empty();
+    }
+    if (value.getType() == ValueType.INT) {
+      return Optional.of(value.asLong());
+    }
+    if (value.getType() == ValueType.FLOAT) {
+      return Optional.of(Math.round((double) value.asFloat()));
+    }
+    if (value.getType() == ValueType.STRING) {
+      try {
+        return Optional.of(Long.parseLong(value.asString().trim()));
+      } catch (NumberFormatException ex) {
+        throw new IllegalArgumentException(
+            "Detected non-long value for " + varName + " : " + value);
+      }
+    }
+    throw new IllegalArgumentException("Unexpected value for " + varName + " : " + value);
+  }
+
+  public Optional<Float> findParamTemperature(final PreprocessorContext context) {
+    return findPreprocessorFloatVariable(PROPERTY_JAIP_TEMPERATURE, context);
+  }
+
+  public Optional<String> findParamInstructionSystem(final PreprocessorContext context) {
+    return findPreprocessorStringVariable(PROPERTY_JAIP_INSTRUCTION_SYSTEM, context);
+  }
+
+  public Optional<Float> findParamTopP(final PreprocessorContext context) {
+    return findPreprocessorFloatVariable(PROPERTY_JAIP_TOP_P, context);
+  }
+
+  public Optional<Float> findParamTopK(final PreprocessorContext context) {
+    return findPreprocessorFloatVariable(PROPERTY_JAIP_TOP_K, context);
+  }
+
+  public Optional<Long> findParamSeed(final PreprocessorContext context) {
+    return findPreprocessorLongVariable(PROPERTY_JAIP_SEED, context);
+  }
+
+  public Optional<Long> findParamMaxTokens(final PreprocessorContext context) {
+    return findPreprocessorLongVariable(PROPERTY_JAIP_MAX_TOKENS, context);
   }
 
   private static File findPromptCacheFile(final PreprocessorContext context,

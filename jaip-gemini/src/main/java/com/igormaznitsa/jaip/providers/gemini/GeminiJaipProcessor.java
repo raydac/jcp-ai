@@ -32,20 +32,28 @@ public class GeminiJaipProcessor extends AbstractJaipProcessor {
     super();
   }
 
-  private static GenerateContentConfig makeDefaultGenerateContentConfig() {
-    return GenerateContentConfig.builder()
-        .temperature(0.1f)
-        .topP(0.95f)
-        .topK(40.0f)
-        .systemInstruction(Content.builder()
+  private GenerateContentConfig makeDefaultGenerateContentConfig(
+      final PreprocessorContext context) {
+    var builder = GenerateContentConfig.builder()
+        .candidateCount(1)
+        .responseModalities("TEXT");
+
+    builder.temperature(this.findParamTemperature(context).orElse(0.15f));
+    this.findParamTopP(context).ifPresent(builder::topP);
+    this.findParamTopK(context).ifPresent(builder::topK);
+    this.findParamSeed(context).map(Long::intValue).ifPresent(builder::seed);
+    this.findParamMaxTokens(context).map(Long::intValue).ifPresent(builder::maxOutputTokens);
+    this.findParamInstructionSystem(context).ifPresentOrElse(x ->
+        builder.systemInstruction(Content.builder()
             .role("model")
-            .parts(Part.builder().text(
-                    "You are a highly skilled senior software engineer with deep expertise in algorithms and advanced Java development, including core Java concepts and best practices. Respond with precise, efficient, and idiomatic Java solutions, and explain your reasoning when needed.")
-                .build())
+            .parts(Part.builder().text(x).build())
+            .build()), () ->
+        builder.systemInstruction(Content.builder()
+            .role("model")
+            .parts(Part.builder().text(DEFAULT_SYSTEM_INSTRUCTION).build())
             .build())
-        .seed(234789324)
-        .responseModalities("TEXT")
-        .build();
+    );
+    return builder.build();
   }
 
   @Override
@@ -85,8 +93,16 @@ public class GeminiJaipProcessor extends AbstractJaipProcessor {
 
     final GenerateContentConfig generateContentConfig =
         findPreprocessorVar(PROPERTY_GEMINI_GENERATE_CONTENT_CONFIG_JSON, context)
-            .map(x -> GenerateContentConfig.fromJson(x.asString()))
-            .orElseGet(GeminiJaipProcessor::makeDefaultGenerateContentConfig);
+            .map(x -> {
+              final String json = x.asString();
+              this.logDebug(
+                  "detected generate content config json for " + positionInfo + ": " + json);
+              return GenerateContentConfig.fromJson(json);
+            })
+            .orElseGet(() -> this.makeDefaultGenerateContentConfig(context));
+
+    this.logDebug(String.format("prepared generate content config for %s: %s", sources,
+        generateContentConfig.toJson()));
 
     final String geminiModel = findPreprocessorVar(PROPERTY_GEMINI_MODEL, context)
         .map(Value::asString)
@@ -94,10 +110,13 @@ public class GeminiJaipProcessor extends AbstractJaipProcessor {
             "Can't find defined Gemini model name through " + PROPERTY_GEMINI_MODEL + " at " +
                 sources));
 
+    logInfo(String.format("sending prompt from %s, model is %s, max tokens %s", sources,
+        geminiModel,
+        generateContentConfig.maxOutputTokens().map(Object::toString).orElse("UNDEFINED")));
+
     final GenerateContentResponse response;
     final long start = System.currentTimeMillis();
     try (final Client client = this.prepareGeminiClient(context)) {
-      logInfo("sending prompt for " + sources);
       response =
           client.models.generateContent(
               geminiModel,
@@ -115,7 +134,7 @@ public class GeminiJaipProcessor extends AbstractJaipProcessor {
       logDebug("detected executable code with text: " + response.text());
       result = executableCode;
     }
-    this.logDebug("SELECTED RESPONSE\n-------------\n" + result + "\n-------------");
+    this.logDebug("RESPONSE for " + sources + "\n-------------\n" + result + "\n-------------");
 
     if (result == null) {
       throw new NullPointerException("Unexpectedly returned null as response text at " + sources);

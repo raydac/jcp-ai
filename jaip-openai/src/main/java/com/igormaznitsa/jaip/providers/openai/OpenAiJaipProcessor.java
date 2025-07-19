@@ -8,7 +8,6 @@ import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
-import com.igormaznitsa.jcp.expression.ValueType;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
@@ -18,30 +17,31 @@ import java.util.stream.Collectors;
 public class OpenAiJaipProcessor extends AbstractJaipProcessor {
 
   public static final String PROPERTY_OPENAI_MODEL = "jaip.openai.model";
-  public static final String PROPERTY_OPENAI_MAX_TOKENS = "jaip.openai.max.tokens";
   public static final String PROPERTY_OPENAI_PROJECT = "jaip.openai.project";
   public static final String PROPERTY_OPENAI_ORG_ID = "jaip.openai.org.id";
   public static final String PROPERTY_OPENAI_WEBHOOK_SECRET = "jaip.openai.webhook.secret";
   public static final String PROPERTY_OPENAI_API_KEY = "jaip.openai.api.key";
   public static final String PROPERTY_OPENAI_BASE_URL = "jaip.openai.base.url";
-  public static final long MAX_TOKENS_BY_DEFAULT = 4096;
 
   public OpenAiJaipProcessor() {
     super();
   }
 
-  private static ChatCompletionCreateParams makeMessage(
+  private ChatCompletionCreateParams makeMessage(
+      final PreprocessorContext context,
       final String model,
-      final long maxTokens,
-      final String message) {
+      final String prompt) {
     var builder = ChatCompletionCreateParams.builder()
-        .temperature(0.1f)
-        .topP(0.95f)
-        .maxCompletionTokens(maxTokens)
-        .addSystemMessage(
-            "You are a highly skilled senior software engineer with deep expertise in algorithms and advanced Java development, including core Java concepts and best practices. Respond with precise, efficient, and idiomatic Java solutions, and explain your reasoning when needed.")
-        .addUserMessage(message);
+        .addUserMessage(prompt)
+        .n(1);
 
+    this.findParamTemperature(context).ifPresent(builder::temperature);
+    this.findParamSeed(context).ifPresent(builder::seed);
+    this.findParamTopP(context).ifPresent(builder::topP);
+    this.findParamMaxTokens(context).ifPresent(builder::maxCompletionTokens);
+
+    findParamInstructionSystem(context).ifPresentOrElse(builder::addSystemMessage,
+        () -> builder.addSystemMessage(DEFAULT_SYSTEM_INSTRUCTION));
     if (model != null) {
       builder.model(model);
     } else {
@@ -90,23 +90,13 @@ public class OpenAiJaipProcessor extends AbstractJaipProcessor {
     try {
       final String model = findPreprocessorVar(PROPERTY_OPENAI_MODEL, context).map(
           Value::asString).orElse(null);
-      final String webhookSecret = findPreprocessorVar(PROPERTY_OPENAI_WEBHOOK_SECRET, context).map(
-          Value::asString).orElse(null);
-      final long maxTokens = findPreprocessorVar(PROPERTY_OPENAI_MAX_TOKENS, context)
-          .map(x -> {
-            if (x.getType() != ValueType.INT) {
-              throw new IllegalArgumentException(
-                  "expected integer value for " + PROPERTY_OPENAI_MAX_TOKENS + " but found " +
-                      x.getType() + " : " + x.asString());
-            }
-            return x.asLong();
-          }).orElse(MAX_TOKENS_BY_DEFAULT);
+      final ChatCompletionCreateParams messageParams = this.makeMessage(context, model, prompt);
+      this.logDebug("Message create params for " + sources + ": " + messageParams);
 
-      logInfo(String.format("sending prompt from %s, model is %s, max tokens %d", sources,
-          (model == null ? "DEFAULT" : model), maxTokens));
-
-      final ChatCompletionCreateParams messageParams = makeMessage(model, maxTokens, prompt);
-      this.logDebug("Message create params: " + messageParams);
+      this.logInfo(String.format("sending prompt from %s to model %s, max tokens %s",
+          sources,
+          messageParams.model().asString(),
+          messageParams.maxCompletionTokens().map(Object::toString).orElse("DEFAULT")));
 
       response = client.chat().completions().create(messageParams).choices().stream()
           .flatMap(choice -> choice.message().content().stream()).collect(Collectors.joining());
@@ -115,7 +105,7 @@ public class OpenAiJaipProcessor extends AbstractJaipProcessor {
     }
     final long spent = System.currentTimeMillis() - start;
 
-    this.logDebug("RESPONSE\n-------------\n" + response + "\n-------------");
+    this.logDebug("RESPONSE for " + sources + "\n-------------\n" + response + "\n-------------");
 
     this.logInfo(
         String.format("got response for the prompt at %s, spent %d ms, response %d char(s)",

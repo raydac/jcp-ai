@@ -17,6 +17,8 @@ public class ArraySorter {
   //$"""JAIP> 1. the method has javadoc header description
   //$"""JAIP> 2. the method doesn't contain any internal method comment, only lines of code
   //$"""JAIP> 3. don't use both single line comments and block comments inside the method code
+  //$"""JAIP> 4. if any import needed then use canonical class name and don't add import section
+  //$"""JAIP> 5. it is only method, must not have any class wrapping
   //#-
   public static int[] fastSort(final int[] array, final boolean asc) {
     throw new UnsupportedOperationException("not generated");
