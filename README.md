@@ -1,6 +1,5 @@
-[![Arthur's acres sanctuary donation](assets/arthur_sanctuary_banner.png)](https://www.arthursacresanimalsanctuary.org/donate)
-
-
+![JAIP Project logo](assets/git_banner.png)   
+   
 # Pre word
 
 A long time ago, I created one of the first Java preprocessors (called JCP) to make building projects easier. The
@@ -14,6 +13,9 @@ inserted directly into the program code (with minor normalizations).
 
 Since the preprocessor can work with Maven, Gradle, and Ant, the ability to use LLMs automatically becomes available
 for these build tools as well.
+
+[![Arthur's acres sanctuary donation](assets/arthur_sanctuary_banner.png)](https://www.arthursacresanimalsanctuary.org/donate)
+
 
 # How it works?
 
