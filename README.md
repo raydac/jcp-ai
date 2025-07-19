@@ -1,3 +1,6 @@
+[![Arthur's acres sanctuary donation](assets/arthur_sanctuary_banner.png)](https://www.arthursacresanimalsanctuary.org/donate)
+
+
 # Pre word
 
 A long time ago, I created one of the first Java preprocessors (called JCP) to make building projects easier. The
