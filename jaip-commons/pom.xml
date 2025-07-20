@@ -11,13 +11,6 @@
     <artifactId>jaip-commons</artifactId>
     <packaging>jar</packaging>
 
-    <name>JAIP Commons</name>
-    <description>Powerful multi-pass preprocessor to process directives situated in C-styled commentaries</description>
-
-    <properties>
-        <maven.compiler.release>11</maven.compiler.release>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.igormaznitsa</groupId>
