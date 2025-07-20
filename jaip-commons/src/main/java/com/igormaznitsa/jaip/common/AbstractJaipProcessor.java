@@ -375,14 +375,14 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
         }
       }
       return resultLines.stream().map(x -> context.isPreserveIndents() ? indent + x : x)
-          .collect(joining(context.getEol(), "", context.getEol()));
+          .collect(joining(context.getEol()));
     } finally {
       this.logDebug("completed prompt, spent " + (System.currentTimeMillis() - start) + "ms");
     }
   }
 
   @Override
-  public boolean isEnabled(
+  public boolean isAllowed(
       final FileInfoContainer fileInfoContainer,
       final FilePositionInfo filePositionInfo,
       final PreprocessorContext preprocessorContext,

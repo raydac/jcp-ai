@@ -112,7 +112,7 @@ public class GeminiJaipProcessor extends AbstractJaipProcessor {
 
     logInfo(String.format("sending prompt from %s, model is %s, max tokens %s", sources,
         geminiModel,
-        generateContentConfig.maxOutputTokens().map(Object::toString).orElse("UNDEFINED")));
+        generateContentConfig.maxOutputTokens().map(Object::toString).orElse("DEFAULT")));
 
     final GenerateContentResponse response;
     final long start = System.currentTimeMillis();

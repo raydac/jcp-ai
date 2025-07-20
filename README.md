@@ -1,6 +1,6 @@
 ![JAIP Project logo](assets/git_banner.png)   
    
-# Pre word
+# Pre-word
 
 A long time ago, I created one of the first Java preprocessors (called JCP) to make building projects easier. The
 preprocessor's business
