@@ -240,6 +240,6 @@ JAIP provides set of common parameters for all connectors:
 - __jaip.openai.base.url__ - base URL for REST calls, it will be provided for REST client
 - __jaip.openai.model__ - name of the model to be used for prompt processing
 - __jaip.openai.project__ - name of a project to process prompt
-- __jaip.openai.org.id__ - organisation id used for authentication
+- __jaip.openai.org.id__ - organization id used for authentication
 - __jaip.openai.webhook.secret__ - webhook secret parameter if needed
 - __jaip.openai.api.key__ - api key if needed
