@@ -2,7 +2,9 @@
    
 # Pre-word
 
-A long time ago, I created one of the first Java preprocessors (called JCP) to make building projects easier. The
+A long time ago, I
+created [one of the first Java preprocessors (called JCP)](https://github.com/raydac/java-comment-preprocessor) to make
+building projects easier. The
 preprocessor's business
 is to read and change the program text. LLMs also work by generating text based on given input, so combining them with
 a preprocessor is a logical step.

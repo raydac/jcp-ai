@@ -68,6 +68,9 @@ public class GeminiJaipProcessor extends AbstractJaipProcessor {
         .map(Value::asString).ifPresent(
             clientOptionsJson -> builder.clientOptions(ClientOptions.fromJson(clientOptionsJson)));
 
+    findTimeoutMs(context)
+        .ifPresent(x -> builder.httpOptions(HttpOptions.builder().timeout(x.intValue()).build()));
+
     findPreprocessorVar(PROPERTY_GEMINI_CLIENT_HTTP_CONFIG_JSON, context)
         .map(Value::asString).ifPresent(
             httpOptionsJson -> builder.httpOptions(HttpOptions.fromJson(httpOptionsJson)));

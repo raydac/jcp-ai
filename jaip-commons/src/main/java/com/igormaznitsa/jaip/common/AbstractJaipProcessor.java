@@ -37,6 +37,7 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
   public static final String PROPERTY_JAIP_PROMPT_CACHE = "jaip.prompt.cache.file";
   public static final String PROPERTY_JAIP_ONLY_PROCESSOR = "jaip.prompt.only.processor";
   public static final String PROPERTY_JAIP_TEMPERATURE = "jaip.prompt.temperature";
+  public static final String PROPERTY_JAIP_TIMEOUT_MS = "jaip.prompt.timeout.ms";
   public static final String PROPERTY_JAIP_TOP_P = "jaip.prompt.top.p";
   public static final String PROPERTY_JAIP_TOP_K = "jaip.prompt.top.k";
   public static final String PROPERTY_JAIP_SEED = "jaip.prompt.seed";
@@ -198,6 +199,10 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
 
   public Optional<Long> findParamSeed(final PreprocessorContext context) {
     return findPreprocessorLongVariable(PROPERTY_JAIP_SEED, context);
+  }
+
+  public Optional<Long> findTimeoutMs(final PreprocessorContext context) {
+    return findPreprocessorLongVariable(PROPERTY_JAIP_TIMEOUT_MS, context);
   }
 
   public Optional<Long> findParamMaxTokens(final PreprocessorContext context) {

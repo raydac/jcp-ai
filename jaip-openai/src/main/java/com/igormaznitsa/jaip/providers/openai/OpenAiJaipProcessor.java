@@ -12,6 +12,7 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import java.time.Duration;
 import java.util.stream.Collectors;
 
 public class OpenAiJaipProcessor extends AbstractJaipProcessor {
@@ -70,6 +71,8 @@ public class OpenAiJaipProcessor extends AbstractJaipProcessor {
 
     findPreprocessorVar(PROPERTY_OPENAI_BASE_URL, context).map(Value::asString)
         .ifPresent(builder::baseUrl);
+
+    findTimeoutMs(context).ifPresent(x -> builder.timeout(Duration.ofMillis(x)));
 
     return builder.build();
   }

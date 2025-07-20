@@ -14,6 +14,7 @@ import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
+import java.time.Duration;
 import java.util.stream.Collectors;
 
 public class AnthropicJaipProcessor extends AbstractJaipProcessor {
@@ -59,7 +60,7 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
     return "ANTHROPIC";
   }
 
-  private AnthropicClient prepareGClient(final PreprocessorContext context) {
+  private AnthropicClient prepareAnthropicClient(final PreprocessorContext context) {
     var builder = AnthropicOkHttpClient.builder().fromEnv();
 
     findPreprocessorVar(PROPERTY_ANTHROPIC_API_KEY, context).map(Value::asString)
@@ -69,6 +70,9 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
 
     findPreprocessorVar(PROPERTY_ANTHROPIC_BASE_URL, context).map(Value::asString)
         .ifPresent(builder::baseUrl);
+
+    findTimeoutMs(context)
+        .ifPresent(x -> builder.timeout(Duration.ofMillis(x)));
 
     return builder.build();
   }
@@ -85,7 +89,7 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
 
     final Message response;
     final long start = System.currentTimeMillis();
-    final AnthropicClient client = this.prepareGClient(context);
+    final AnthropicClient client = this.prepareAnthropicClient(context);
     try {
       final String model = findPreprocessorVar(PROPERTY_ANTHROPIC_MODEL, context).map(
           Value::asString).orElse(null);
