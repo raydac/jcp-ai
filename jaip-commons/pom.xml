@@ -57,6 +57,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
                             <relocations>
                                 <relocation>
                                     <pattern>org.hisp</pattern>
@@ -72,6 +73,7 @@
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
+                                        <exclude>META-INF/maven/org.hisp.dhis</exclude>
                                         <exclude>META-INF/maven/org.hisp.dhis/json-tree/pom.properties</exclude>
                                         <exclude>META-INF/maven/org.hisp.dhis/json-tree/pom.xml</exclude>
                                         <exclude>META-INF/LICENSE.txt</exclude>

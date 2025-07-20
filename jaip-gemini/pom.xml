@@ -242,6 +242,17 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/org.hisp.dhis</exclude>
+                                        <exclude>META-INF/maven/org.hisp.dhis/json-tree/pom.properties</exclude>
+                                        <exclude>META-INF/maven/org.hisp.dhis/json-tree/pom.xml</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
                             <relocations>
                                 <relocation>
                                     <pattern>com.igormaznitsa.jaip.common</pattern>
