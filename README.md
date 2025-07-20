@@ -1,4 +1,4 @@
-![JAIP Project logo](assets/git_banner.png)   
+![JAIP Project logo](assets/git_banner_optimized.svg)   
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Maven central](https://img.shields.io/badge/maven%20central-1.0.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jaip|1.0.0|jar)
 [![Java 17+](https://img.shields.io/badge/java-17%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
