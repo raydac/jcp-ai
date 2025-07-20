@@ -163,6 +163,8 @@ JAIP provides set of common parameters for all connectors:
 
 ### Gemini AI
 
+As REST client I use the [`googleapis/java-genai`](https://github.com/googleapis/java-genai) library.
+
 #### Maven dependency
 
 ```xml
@@ -192,6 +194,8 @@ JAIP provides set of common parameters for all connectors:
 
 ### Anthropic
 
+As REST client I use the [`anthropics/anthropic-sdk-java`](https://github.com/anthropics/anthropic-sdk-java) library.
+
 #### Maven dependency
 
 ```xml
@@ -217,6 +221,8 @@ JAIP provides set of common parameters for all connectors:
 - __jaip.anthropic.api.key__ - api key if needed
 
 ### OpenAI
+
+As REST client I use the [`openai/openai-java`](https://github.com/openai/openai-java) library.
 
 #### Maven dependency
 
