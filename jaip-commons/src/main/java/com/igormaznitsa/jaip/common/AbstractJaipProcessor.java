@@ -205,6 +205,10 @@ public abstract class AbstractJaipProcessor implements CommentTextProcessor {
     return findPreprocessorLongVariable(PROPERTY_JAIP_TIMEOUT_MS, context);
   }
 
+  public Optional<String> findBaseUrl(final String varName, final PreprocessorContext context) {
+    return findPreprocessorStringVariable(varName, context);
+  }
+
   public Optional<Long> findParamMaxTokens(final PreprocessorContext context) {
     return findPreprocessorLongVariable(PROPERTY_JAIP_MAX_TOKENS, context);
   }

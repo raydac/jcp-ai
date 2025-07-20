@@ -68,9 +68,10 @@ public class AnthropicJaipProcessor extends AbstractJaipProcessor {
     findPreprocessorVar(PROPERTY_ANTHROPIC_AUTH_TOKEN, context).map(Value::asString)
         .ifPresent(builder::authToken);
 
-    findPreprocessorVar(PROPERTY_ANTHROPIC_BASE_URL, context).map(Value::asString)
-        .ifPresent(builder::baseUrl);
-
+    findBaseUrl(PROPERTY_ANTHROPIC_BASE_URL, context).ifPresent(x -> {
+      this.logDebug("detected provided base url: " + x);
+      builder.baseUrl(x);
+    });
     findTimeoutMs(context)
         .ifPresent(x -> builder.timeout(Duration.ofMillis(x)));
 

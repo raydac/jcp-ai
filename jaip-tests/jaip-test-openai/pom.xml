@@ -60,14 +60,14 @@
                 </executions>
                 <dependencies>
                     <dependency>
-                        <groupId>com.openai</groupId>
-                        <artifactId>openai-java</artifactId>
-                        <version>2.16.0</version>
-                    </dependency>
-                    <dependency>
                         <groupId>com.igormaznitsa</groupId>
                         <artifactId>jaip-openai</artifactId>
                         <version>${jaip.test.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.openai</groupId>
+                        <artifactId>openai-java</artifactId>
+                        <version>2.16.0</version>
                     </dependency>
                 </dependencies>
             </plugin>

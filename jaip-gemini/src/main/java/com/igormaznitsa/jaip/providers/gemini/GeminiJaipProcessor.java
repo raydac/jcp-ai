@@ -15,12 +15,14 @@ import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
+import java.util.Optional;
 
 public class GeminiJaipProcessor extends AbstractJaipProcessor {
 
   public static final String PROPERTY_GEMINI_MODEL = "jaip.gemini.model";
   public static final String PROPERTY_GEMINI_PROJECT_ID = "jaip.gemini.project.id";
   public static final String PROPERTY_GEMINI_API_KEY = "jaip.gemini.api.key";
+  public static final String PROPERTY_GEMINI_BASE_URL = "jaip.gemini.base.url";
   public static final String PROPERTY_GEMINI_GENERATE_CONTENT_CONFIG_JSON =
       "jaip.gemini.generate.content.config.json";
   public static final String PROPERTY_GEMINI_CLIENT_HTTP_CONFIG_JSON =
@@ -68,8 +70,20 @@ public class GeminiJaipProcessor extends AbstractJaipProcessor {
         .map(Value::asString).ifPresent(
             clientOptionsJson -> builder.clientOptions(ClientOptions.fromJson(clientOptionsJson)));
 
-    findTimeoutMs(context)
-        .ifPresent(x -> builder.httpOptions(HttpOptions.builder().timeout(x.intValue()).build()));
+    final Optional<Long> timeout = findTimeoutMs(context);
+    final Optional<String> baseUrl = findBaseUrl(PROPERTY_GEMINI_BASE_URL, context);
+
+    if (timeout.isPresent() || baseUrl.isPresent()) {
+      final HttpOptions.Builder httpBuilder = HttpOptions.builder();
+
+      timeout.ifPresent(x -> httpBuilder.timeout(x.intValue()));
+      baseUrl.ifPresent(x -> {
+        this.logDebug("detected provided base url: " + x);
+        httpBuilder.baseUrl(x);
+      });
+
+      builder.httpOptions(httpBuilder.build());
+    }
 
     findPreprocessorVar(PROPERTY_GEMINI_CLIENT_HTTP_CONFIG_JSON, context)
         .map(Value::asString).ifPresent(

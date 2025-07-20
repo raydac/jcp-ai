@@ -69,9 +69,10 @@ public class OpenAiJaipProcessor extends AbstractJaipProcessor {
     findPreprocessorVar(PROPERTY_OPENAI_PROJECT, context).map(Value::asString)
         .ifPresent(builder::project);
 
-    findPreprocessorVar(PROPERTY_OPENAI_BASE_URL, context).map(Value::asString)
-        .ifPresent(builder::baseUrl);
-
+    findBaseUrl(PROPERTY_OPENAI_BASE_URL, context).ifPresent(x -> {
+      this.logDebug("detected provided base url: " + x);
+      builder.baseUrl(x);
+    });
     findTimeoutMs(context).ifPresent(x -> builder.timeout(Duration.ofMillis(x)));
 
     return builder.build();
