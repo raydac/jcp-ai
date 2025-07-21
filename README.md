@@ -1,13 +1,12 @@
-![JAIP Project logo](assets/git_banner_optimized.svg)   
+![JCP-AI Project logo](assets/git_banner_optimized.svg)   
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Maven central](https://img.shields.io/badge/maven%20central-1.0.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jaip|1.0.0|jar)
+[![Maven central](https://img.shields.io/badge/maven%20central-1.0.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai|1.0.0|jar)
 [![Java 17+](https://img.shields.io/badge/java-17%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 [![Maven 3.8+](https://img.shields.io/badge/maven-3.8%2b-green.svg)](https://maven.apache.org/)
 
 # Pre-word
 
-A long time ago, I
-created [one of the first Java preprocessors (called JCP)](https://github.com/raydac/java-comment-preprocessor) to make
+A long time ago, I created [one of the first Java preprocessors (called JCP)](https://github.com/raydac/java-comment-preprocessor) to make
 building projects easier. The preprocessor's business is to read and change the program text. LLMs also work by
 generating text based on given input, so combining them with a preprocessor is a logical step.
 
@@ -22,7 +21,7 @@ for these build tools as well.
 
 # How it works?
 
-JAIP is a set of libraries that provide specialized services capable of calling external LLMs to process text. I’ve
+JCP-AI is a set of extension libraries that provide specialized services capable of calling external LLMs to process text. I’ve
 added support for LLMs that have official open-source Java clients.   
 Currently, it provides connectors for:
 
@@ -32,10 +31,9 @@ Currently, it provides connectors for:
 
 ![Sequence diagram](assets/sequence1.png)
 
-The preprocessor discovers JAIP processors through Java's service registration mechanism, so it's enough for them to
-appear in its classpath for them to become automatically available. For better flexibility and compatibility, JAIP
-client
-libraries don’t include any client code themselves; instead, they rely on a client library already present in the
+The preprocessor discovers JCP-AI processors through Java's service registration mechanism, so it's enough for them to
+appear in its classpath for them to become automatically available. For better flexibility and compatibility, JCP-AI
+client libraries don’t include any client code themselves; instead, they rely on a client library already present in the
 classpath.
 
 # Example for Maven
@@ -44,10 +42,8 @@ Let's take a look at a small example, how to inject a bit AI into a Maven projec
 
 ## Tune pom.xml
 
-As the first step, we should tune the project pom.xml, inject [JCP](https://github.com/raydac/java-comment-preprocessor)
-into build process and include JAIP. Let's use
-Gemini AI as target LLM.   
-The build section in the case should look like the snippet below:
+As the first step, we should tune the project pom.xml, inject [JCP](https://github.com/raydac/java-comment-preprocessor) into build process and include JCP-AI. Let's use
+Gemini AI as target LLM. The build section in the case should look like the snippet below:
 
 ```xml
 <build>
@@ -67,9 +63,9 @@ The build section in the case should look like the snippet below:
                         <allowBlocks>true</allowBlocks>
                         <preserveIndents>true</preserveIndents>
                         <vars>
-                            <jaip.gemini.model>${jaip.gemini.model}</jaip.gemini.model>
-                            <jaip.gemini.api.key>${jaip.gemini.api.key}</jaip.gemini.api.key>
-                            <jaip.prompt.cache.file>${jaip.prompt.cache.file}</jaip.prompt.cache.file>
+                            <jcpai.gemini.model>${jcpai.gemini.model}</jcpai.gemini.model>
+                            <jcpai.gemini.api.key>${jcpai.gemini.api.key}</jcpai.gemini.api.key>
+                            <jcpai.prompt.cache.file>${jcpai.prompt.cache.file}</jcpai.prompt.cache.file>
                         </vars>
                     </configuration>
                 </execution>
@@ -82,7 +78,7 @@ The build section in the case should look like the snippet below:
                 </dependency>
                 <dependency>
                     <groupId>com.igormaznitsa</groupId>
-                    <artifactId>jaip-gemini</artifactId>
+                    <artifactId>jcp-ai-gemini</artifactId>
                     <version>1.0.0</version>
                 </dependency>
             </dependencies>
@@ -91,9 +87,9 @@ The build section in the case should look like the snippet below:
 </build>
 ```
 
-Through the dependency section of the JCP plugin, we inject JAIP GeminiAI connector
+Through the dependency section of the JCP plugin, we inject JCP-AI GeminiAI connector
 and [its official REST client library](https://github.com/googleapis/java-genai). I specially don't include dependencies
-to clients into JAIP connectors to change easily their version and don't keep dependency hard link between
+to clients into JCP-AI connectors to change easily their version and don't keep dependency hard link between
 dependencies.
 
 ## Inject prompt into sources
@@ -102,22 +98,22 @@ For work with prompts as text blocks I recommend you to turn on text block mode 
 allows add some prompts directly into sources like below
 
 ```java
-//$"""JAIP> code level is Java /*$mvn.project.property.maven.compiler.release$*/
-//$"""JAIP> generate method implements fastest sort algorithm with minimal memory overhead, the speed is priority:
-//$"""JAIP>     public static int [] fastSort(final int [] array, final boolean asc)
-//$"""JAIP> where arguments are
-//$"""JAIP>   int [] array is array to be sorted
-//$"""JAIP>   asc is flag shows if true then ascending order for result, descending order otherwise
-//$"""JAIP> it returns the same incoming array if it is null, empty or single value array, else returns new version of array with sorted values.
-//$"""JAIP> the method should contain whole implementation of sort algorithm without any use of third side libraries, helpers and utility classes
-//$"""JAIP> can't have additional methods and functions, all implementation must be as the single method
-//$"""JAIP>
-//$"""JAIP> special requirements and restrictions:
-//$"""JAIP> 1. the method has javadoc header description
-//$"""JAIP> 2. the method doesn't contain any internal method comment, only lines of code
-//$"""JAIP> 3. don't use both single line comments and block comments inside the method code
-//$"""JAIP> 4. if any import needed then use canonical class name and don't add import section
-//$"""JAIP> 5. it is only method, must not have any class wrapping
+//$"""AI> code level is Java /*$mvn.project.property.maven.compiler.release$*/
+//$"""AI> generate method implements fastest sort algorithm with minimal memory overhead, the speed is priority:
+//$"""AI>     public static int [] fastSort(final int [] array, final boolean asc)
+//$"""AI> where arguments are
+//$"""AI>   int [] array is array to be sorted
+//$"""AI>   asc is flag shows if true then ascending order for result, descending order otherwise
+//$"""AI> it returns the same incoming array if it is null, empty or single value array, else returns new version of array with sorted values.
+//$"""AI> the method should contain whole implementation of sort algorithm without any use of third side libraries, helpers and utility classes
+//$"""AI> can't have additional methods and functions, all implementation must be as the single method
+//$"""AI>
+//$"""AI> special requirements and restrictions:
+//$"""AI> 1. the method has javadoc header description
+//$"""AI> 2. the method doesn't contain any internal method comment, only lines of code
+//$"""AI> 3. don't use both single line comments and block comments inside the method code
+//$"""AI> 4. if any import needed then use canonical class name and don't add import section
+//$"""AI> 5. it is only method, must not have any class wrapping
 //#-
 public static int[] fastSort(final int[] array, final boolean asc) {
   throw new UnsupportedOperationException("not generated");
@@ -125,38 +121,38 @@ public static int[] fastSort(final int[] array, final boolean asc) {
 //#+
 ```
 
-All sequent lines marked as `//$"""JAIP>` will be recognized as single prompt, they will be accumulated as text block
-and provided to JAIP for processing. After processing, the result will fully replace the prompt text.
+All sequent lines marked as `//$"""AI>` will be recognized as single prompt, they will be accumulated as text block
+and provided to JCP-AI for processing. After processing, the result will fully replace the prompt text.
 The result sources can be found in the maven project folder by path `target/generated-sources/preprocessed`.
 
-## Tune JAIP
+## Tune JCP-AI
 
 Requests to LLMs are not cheap, so I have provided way to cache their responses. We can provide JCP global variable
-`jaip.prompt.cache.file` with path to caching file through preprocessor config and JAIP starts save gotten prompts in
+`jcpai.prompt.cache.file` with path to caching file through preprocessor config and JCP-AI starts save gotten prompts in
 the defined file as JSON. During every call it will be looking for already presented response for a prompt in the cache
 and inject existing cached text if it is presented.
 
-# JAIP parameters
+# JCP-AI parameters
 
-All parameters of JAIP can be provided as local or global variables of JCP, in the plugin it is the `var` config
+All parameters of JCP-AI can be provided as local or global variables of JCP, in the plugin it is the `var` config
 section.
 
 ## Common parameters
 
-JAIP provides set of common parameters for all connectors:
+JCP-AI provides set of common parameters for all connectors:
 
-- __jaip.prompt.cache.file__ - path to a cache file which contains prompt results in JSON format
-- __jaip.prompt.only.processor__ - if multiple JAIP connectors detected as services then all they will be called for
+- __jcpai.prompt.cache.file__ - path to a cache file which contains prompt results in JSON format
+- __jcpai.prompt.only.processor__ - if multiple JCP-AI connectors detected as services then all they will be called for
   same prompt and their result will be accumulated, but this parameter allows to specify only connector which will
   be called in the case if needed.
-- __jaip.prompt.temperature__ - float value to define __temperature__ for LLM process
-- __jaip.prompt.timeout.ms__ - integer number of milliseconds for requests timeout, it will be provided directly
+- __jcpai.prompt.temperature__ - float value to define __temperature__ for LLM process
+- __jcpai.prompt.timeout.ms__ - integer number of milliseconds for requests timeout, it will be provided directly
   to the calling REST client and its scope of responsibility
-- __jaip.prompt.top.p__ - TopP parameter for LLM process if client supports it
-- __jaip.prompt.top.k__ - TopK parameter for LLM process if client supports it
-- __jaip.prompt.seed__ - Seed parameter for LLM process if client supports it
-- __jaip.prompt.max.tokens__ - limit number for output tokens for LLM process if client supports it
-- __jaip.prompt.instruction.system__ - text to be sent as system instruction with prompt, if not defined then default
+- __jcpai.prompt.top.p__ - TopP parameter for LLM process if client supports it
+- __jcpai.prompt.top.k__ - TopK parameter for LLM process if client supports it
+- __jcpai.prompt.seed__ - Seed parameter for LLM process if client supports it
+- __jcpai.prompt.max.tokens__ - limit number for output tokens for LLM process if client supports it
+- __jcpai.prompt.instruction.system__ - text to be sent as system instruction with prompt, if not defined then default
   one will be sent
 
 ## Connector specific parameters
@@ -171,7 +167,7 @@ As REST client I use the [`googleapis/java-genai`](https://github.com/googleapis
 <dependencies>
     <dependency>
         <groupId>com.igormaznitsa</groupId>
-        <artifactId>jaip-gemini</artifactId>
+        <artifactId>jcp-ai-gemini</artifactId>
         <version>1.0.0</version>
     </dependency>
     <dependency>
@@ -184,13 +180,13 @@ As REST client I use the [`googleapis/java-genai`](https://github.com/googleapis
 
 #### Variables
 
-- __jaip.gemini.base.url__ - base URL for REST calls, it will be provided for REST client
-- __jaip.gemini.model__ - name of the model to be used for prompt processing
-- __jaip.gemini.project.id__ - project id for authentication if needed
-- __jaip.gemini.api.key__ - api key for authentication if needed
-- __jaip.gemini.generate.content.config.json__ - string contains JSON config for generate content
-- __jaip.gemini.http.config.json__ - string contain JSON config for client http options
-- __jaip.gemini.client.options.json__ - string contain whole JSON config for client
+- __jcpai.gemini.base.url__ - base URL for REST calls, it will be provided for REST client
+- __jcpai.gemini.model__ - name of the model to be used for prompt processing
+- __jcpai.gemini.project.id__ - project id for authentication if needed
+- __jcpai.gemini.api.key__ - api key for authentication if needed
+- __jcpai.gemini.generate.content.config.json__ - string contains JSON config for generate content
+- __jcpai.gemini.http.config.json__ - string contain JSON config for client http options
+- __jcpai.gemini.client.options.json__ - string contain whole JSON config for client
 
 ### Anthropic
 
@@ -202,7 +198,7 @@ As REST client I use the [`anthropics/anthropic-sdk-java`](https://github.com/an
 <dependencies>
     <dependency>
         <groupId>com.igormaznitsa</groupId>
-        <artifactId>jaip-anthropic</artifactId>
+        <artifactId>jcp-ai-anthropic</artifactId>
         <version>1.0.0</version>
     </dependency>
     <dependency>
@@ -215,10 +211,10 @@ As REST client I use the [`anthropics/anthropic-sdk-java`](https://github.com/an
 
 #### Variables
 
-- __jaip.anthropic.base.url__ - base URL for REST calls, it will be provided for REST client
-- __jaip.anthropic.model__ - name of the model to be used for prompt processing
-- __jaip.anthropic.auth.token__ - authentication token if needed
-- __jaip.anthropic.api.key__ - api key if needed
+- __jcpai.anthropic.base.url__ - base URL for REST calls, it will be provided for REST client
+- __jcpai.anthropic.model__ - name of the model to be used for prompt processing
+- __jcpai.anthropic.auth.token__ - authentication token if needed
+- __jcpai.anthropic.api.key__ - api key if needed
 
 ### OpenAI
 
@@ -230,7 +226,7 @@ As REST client I use the [`openai/openai-java`](https://github.com/openai/openai
 <dependencies>
     <dependency>
         <groupId>com.igormaznitsa</groupId>
-        <artifactId>jaip-openai</artifactId>
+        <artifactId>jcp-ai-openai</artifactId>
         <version>1.0.0</version>
     </dependency>
     <dependency>
@@ -243,9 +239,9 @@ As REST client I use the [`openai/openai-java`](https://github.com/openai/openai
 
 #### Variables
 
-- __jaip.openai.base.url__ - base URL for REST calls, it will be provided for REST client
-- __jaip.openai.model__ - name of the model to be used for prompt processing
-- __jaip.openai.project__ - name of a project to process prompt
-- __jaip.openai.org.id__ - organization id used for authentication
-- __jaip.openai.webhook.secret__ - webhook secret parameter if needed
-- __jaip.openai.api.key__ - api key if needed
+- __jcpai.openai.base.url__ - base URL for REST calls, it will be provided for REST client
+- __jcpai.openai.model__ - name of the model to be used for prompt processing
+- __jcpai.openai.project__ - name of a project to process prompt
+- __jcpai.openai.org.id__ - organization id used for authentication
+- __jcpai.openai.webhook.secret__ - webhook secret parameter if needed
+- __jcpai.openai.api.key__ - api key if needed

@@ -1,0 +1,76 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.igormaznitsa</groupId>
+    <artifactId>jcp-ai-tests</artifactId>
+    <version>0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>jcp-ai-test-gemini</artifactId>
+  <packaging>jar</packaging>
+
+  <properties>
+    <jcpai.prompt.cache.file>${project.basedir}/jcp_ai_gemini_cache.json</jcpai.prompt.cache.file>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>load-secret-properties</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+            <configuration>
+              <files>
+                <file>${project.basedir}/secret_properties.properties</file>
+              </files>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.igormaznitsa</groupId>
+        <artifactId>jcp</artifactId>
+        <executions>
+          <execution>
+            <id>preprocessSources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>preprocess</goal>
+            </goals>
+            <configuration>
+              <keepLines>false</keepLines>
+              <allowBlocks>true</allowBlocks>
+              <preserveIndents>true</preserveIndents>
+              <vars>
+                <jcpai.gemini.model>${jcpai.gemini.model}</jcpai.gemini.model>
+                <jcpai.gemini.api.key>${jcpai.gemini.api.key}</jcpai.gemini.api.key>
+                <jcpai.prompt.cache.file>${jcpai.prompt.cache.file}</jcpai.prompt.cache.file>
+              </vars>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.igormaznitsa</groupId>
+            <artifactId>jcp-ai-gemini</artifactId>
+            <version>${jcpai.test.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>com.google.genai</groupId>
+            <artifactId>google-genai</artifactId>
+            <version>1.9.0</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

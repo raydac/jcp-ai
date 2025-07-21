@@ -1,0 +1,76 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.igormaznitsa</groupId>
+        <artifactId>jcp-ai-tests</artifactId>
+        <version>0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jcp-ai-test-anthropics</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <jcpai.prompt.cache.file>${project.basedir}/jcp_ai_anthropics_cache.json</jcpai.prompt.cache.file>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>load-secret-properties</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>${project.basedir}/secret_properties.properties</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.igormaznitsa</groupId>
+                <artifactId>jcp</artifactId>
+                <executions>
+                    <execution>
+                        <id>preprocessSources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>preprocess</goal>
+                        </goals>
+                        <configuration>
+                            <keepLines>false</keepLines>
+                            <allowBlocks>true</allowBlocks>
+                            <preserveIndents>true</preserveIndents>
+                            <vars>
+                                <jcpai.anthropic.model>${jcpai.anthropic.model}</jcpai.anthropic.model>
+                                <jcpai.anthropic.api.key>${jcpai.anthropic.api.key}</jcpai.anthropic.api.key>
+                                <jcpai.prompt.cache.file>${jcpai.prompt.cache.file}</jcpai.prompt.cache.file>
+                            </vars>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.igormaznitsa</groupId>
+                        <artifactId>jcp-ai-anthropic</artifactId>
+                        <version>${jcpai.test.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.anthropic</groupId>
+                        <artifactId>anthropic-java</artifactId>
+                        <version>2.2.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

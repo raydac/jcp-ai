@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.igormaznitsa</groupId>
-    <artifactId>jaip</artifactId>
+    <artifactId>jcp-ai</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -18,10 +18,10 @@
     </properties>
 
     <modules>
-        <module>jaip-commons</module>
-        <module>jaip-gemini</module>
-        <module>jaip-anthropic</module>
-        <module>jaip-openai</module>
+        <module>jcp-ai-commons</module>
+        <module>jcp-ai-gemini</module>
+        <module>jcp-ai-anthropic</module>
+        <module>jcp-ai-openai</module>
     </modules>
 
     <developers>
@@ -39,13 +39,13 @@
 
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/raydac/jaip/issues</url>
+        <url>https://github.com/raydac/jcp-ai/issues</url>
     </issueManagement>
 
     <scm>
-        <url>https://github.com/raydac/jaip</url>
-        <connection>scm:git:git://github.com/raydac/jaip.git</connection>
-        <developerConnection>scm:git:git@github.com:raydac/jaip.git</developerConnection>
+        <url>https://github.com/raydac/jcp-ai</url>
+        <connection>scm:git:git://github.com/raydac/jcp-ai.git</connection>
+        <developerConnection>scm:git:git@github.com:raydac/jcp-ai.git</developerConnection>
     </scm>
 
     <organization>
@@ -65,7 +65,7 @@
         <profile>
             <id>it</id>
             <modules>
-                <module>jaip-tests</module>
+                <module>jcp-ai-tests</module>
             </modules>
         </profile>
     </profiles>
