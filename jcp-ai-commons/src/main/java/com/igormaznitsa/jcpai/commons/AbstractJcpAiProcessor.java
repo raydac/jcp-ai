@@ -91,7 +91,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
         jcpAiLines.add(leftTrim.substring(AI_PROMPT_PREFIX.length()));
       } else {
         if (!jcpAiLines.isEmpty()) {
-          result.add(new JaipPrompt(jcpAiLines, position));
+          result.add(new JcpAiPrompt(jcpAiLines, position));
           jcpAiLines.clear();
           position = new FilePositionInfo(position.getFile(),
               startLinePosition.getStringIndex() + stringLineIndex);
@@ -105,7 +105,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
       result.add(new JustTextBlock(justLines, position));
     }
     if (!jcpAiLines.isEmpty()) {
-      result.add(new JaipPrompt(jcpAiLines, position));
+      result.add(new JcpAiPrompt(jcpAiLines, position));
     }
 
     return result;
@@ -354,7 +354,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
       for (final TextBlock block : detectedTextBlocks) {
         if (block instanceof JustTextBlock) {
           resultLines.addAll(block.lines);
-        } else if (block instanceof JaipPrompt) {
+        } else if (block instanceof JcpAiPrompt) {
           final String promptKey;
           String cachedResponse = null;
           if (cacheFile != null) {
@@ -443,8 +443,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
     }
   }
 
-  private static final class JaipPrompt extends TextBlock {
-    JaipPrompt(final List<String> text, final FilePositionInfo positionInfo) {
+  private static final class JcpAiPrompt extends TextBlock {
+    JcpAiPrompt(final List<String> text, final FilePositionInfo positionInfo) {
       super(text, positionInfo);
     }
   }

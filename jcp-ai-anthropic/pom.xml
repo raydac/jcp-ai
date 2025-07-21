@@ -11,9 +11,8 @@
     <artifactId>jcp-ai-anthropic</artifactId>
     <packaging>jar</packaging>
 
-    <name>JAIP Anthropic client connector</name>
-    <description>A bridge service for Java Comment Preprocessor(JCP) to bring Anthropic LLM into preprocessing
-    </description>
+    <name>JCP-AI Anthropic client adapter</name>
+    <description>Anthropic client adapter for Java Comment Preprocessor AI</description>
 
     <profiles>
         <profile>

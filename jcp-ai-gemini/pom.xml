@@ -11,8 +11,8 @@
     <artifactId>jcp-ai-gemini</artifactId>
     <packaging>jar</packaging>
 
-    <name>JCP-AI Gemini AI client connector</name>
-    <description>A bridge service for Java Comment Preprocessor(JCP) to bring Gemini AI into preprocessing</description>
+    <name>JCP-AI GeminiAI client adapter</name>
+    <description>GeminiAI client adapter for Java Comment Preprocessor AI</description>
 
     <profiles>
         <profile>

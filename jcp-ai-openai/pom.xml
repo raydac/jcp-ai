@@ -11,8 +11,8 @@
     <artifactId>jcp-ai-openai</artifactId>
     <packaging>jar</packaging>
 
-    <name>JAIP OpenAI client connector</name>
-    <description>A bridge service for Java Comment Preprocessor(JCP) to bring OpenAI into preprocessing</description>
+    <name>JCP-AI OpenAI client adapter</name>
+    <description>OpenAI client adapter for Java Comment Preprocessor AI</description>
 
     <profiles>
         <profile>
