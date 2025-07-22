@@ -25,9 +25,9 @@ JCP-AI is a set of extension libraries that provide specialized services capable
 added support for LLMs that have official open-source Java clients.   
 Currently, it provides connectors for:
 
-- [__Gemini AI__ (Google)](https://gemini.google.com/app)
-- [__Claude AI__ (Anthropic)](https://claude.ai)
-- [__ChatGPT__ (OpenAI)](https://chatgpt.com/)
+- [__Gemini AI__ (Google)](jcp-ai-gemini/README.md)
+- [__Claude AI__ (Anthropic)](jcp-ai-anthropic/README.md)
+- [__ChatGPT__ (OpenAI)](jcp-ai-openai/README.md)
 
 ![Sequence diagram](assets/sequence1.png)
 
@@ -137,7 +137,7 @@ and inject existing cached text if it is presented.
 All parameters of JCP-AI can be provided as local or global variables of JCP, in the plugin it is the `var` config
 section.
 
-## Common parameters
+## Common variables
 
 JCP-AI provides set of common parameters for all connectors:
 
@@ -155,93 +155,3 @@ JCP-AI provides set of common parameters for all connectors:
 - __jcpai.prompt.instruction.system__ - text to be sent as system instruction with prompt, if not defined then default
   one will be sent
 
-## Connector specific parameters
-
-### Gemini AI
-
-As REST client I use the [`googleapis/java-genai`](https://github.com/googleapis/java-genai) library.
-
-#### Maven dependency
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>com.igormaznitsa</groupId>
-        <artifactId>jcp-ai-gemini</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-    <dependency>
-        <groupId>com.google.genai</groupId>
-        <artifactId>google-genai</artifactId>
-        <version>1.9.0</version>
-    </dependency>
-</dependencies>
-```
-
-#### Variables
-
-- __jcpai.gemini.base.url__ - base URL for REST calls, it will be provided for REST client
-- __jcpai.gemini.model__ - name of the model to be used for prompt processing
-- __jcpai.gemini.project.id__ - project id for authentication if needed
-- __jcpai.gemini.api.key__ - api key for authentication if needed
-- __jcpai.gemini.generate.content.config.json__ - string contains JSON config for generate content
-- __jcpai.gemini.http.config.json__ - string contain JSON config for client http options
-- __jcpai.gemini.client.options.json__ - string contain whole JSON config for client
-
-### Anthropic
-
-As REST client I use the [`anthropics/anthropic-sdk-java`](https://github.com/anthropics/anthropic-sdk-java) library.
-
-#### Maven dependency
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>com.igormaznitsa</groupId>
-        <artifactId>jcp-ai-anthropic</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-    <dependency>
-        <groupId>com.anthropic</groupId>
-        <artifactId>anthropic-java</artifactId>
-        <version>2.2.0</version>
-    </dependency>
-</dependencies>
-```
-
-#### Variables
-
-- __jcpai.anthropic.base.url__ - base URL for REST calls, it will be provided for REST client
-- __jcpai.anthropic.model__ - name of the model to be used for prompt processing
-- __jcpai.anthropic.auth.token__ - authentication token if needed
-- __jcpai.anthropic.api.key__ - api key if needed
-
-### OpenAI
-
-As REST client I use the [`openai/openai-java`](https://github.com/openai/openai-java) library.
-
-#### Maven dependency
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>com.igormaznitsa</groupId>
-        <artifactId>jcp-ai-openai</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-    <dependency>
-        <groupId>com.openai</groupId>
-        <artifactId>openai-java</artifactId>
-        <version>2.16.0</version>
-    </dependency>
-</dependencies>
-```
-
-#### Variables
-
-- __jcpai.openai.base.url__ - base URL for REST calls, it will be provided for REST client
-- __jcpai.openai.model__ - name of the model to be used for prompt processing
-- __jcpai.openai.project__ - name of a project to process prompt
-- __jcpai.openai.org.id__ - organization id used for authentication
-- __jcpai.openai.webhook.secret__ - webhook secret parameter if needed
-- __jcpai.openai.api.key__ - api key if needed

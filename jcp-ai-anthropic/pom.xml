@@ -196,7 +196,7 @@
                             <relocations>
                                 <relocation>
                                     <pattern>com.igormaznitsa.jcpai.common</pattern>
-                                    <shadedPattern>com.igormaznitsa.jcpai.anthropic.hidden.jcpai.common</shadedPattern>
+                                    <shadedPattern>com.igormaznitsa.jcpai.anthropic.hidden</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

@@ -1,0 +1,1 @@
+The module contains common shared classes, utils and helpers for JCP-AI connectors.
