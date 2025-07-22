@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.igormaznitsa</groupId>
         <artifactId>jcp-ai</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
 
     <artifactId>jcp-ai-openai</artifactId>
@@ -125,7 +125,8 @@
         <dependency>
             <groupId>com.igormaznitsa</groupId>
             <artifactId>jcp-ai-commons</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.0</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.igormaznitsa</groupId>
@@ -187,17 +188,16 @@
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
-                                        <exclude>META-INF/maven/org.hisp.dhis</exclude>
-                                        <exclude>META-INF/maven/org.hisp.dhis/json-tree/pom.properties</exclude>
-                                        <exclude>META-INF/maven/org.hisp.dhis/json-tree/pom.xml</exclude>
+                                        <exclude>META-INF/maven/org.hisp.dhis/**</exclude>
+                                        <exclude>META-INF/maven/com.igormaznitsa/jcp-ai-commons/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
                             <useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
                             <relocations>
                                 <relocation>
-                                    <pattern>com.igormaznitsa.jcpai.common</pattern>
-                                    <shadedPattern>com.igormaznitsa.jcpai.openai.hidden</shadedPattern>
+                                    <pattern>com.igormaznitsa.jcpai.commons</pattern>
+                                    <shadedPattern>com.igormaznitsa.jcpai.providers.openai.hidden.jcpai.commons</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
