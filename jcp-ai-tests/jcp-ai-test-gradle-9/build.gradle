@@ -1,0 +1,74 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.igormaznitsa:jcp:7.2.1'
+        classpath 'com.igormaznitsa:jcp-ai-gemini:1.0.1-SNAPSHOT'
+        classpath 'com.google.genai:google-genai:1.10.0'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'com.igormaznitsa.jcp'
+
+application {
+    mainClass = 'hello.world'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.4'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+def propsFile = file("secret_properties.properties")
+if (!propsFile.exists()) {
+    throw new GradleException("Missing required properties file: ${propsFile}")
+}
+
+def configProps = new Properties()
+propsFile.withInputStream { configProps.load(it) }
+
+preprocess {
+    sources = sourceSets.main.java.srcDirs
+    sourceEncoding = 'UTF-8'
+    targetEncoding = 'UTF-8'
+    allowBlocks = true
+    preserveIndents = true
+    keepComments = 'remove_jcp_only'
+    vars = [
+            'jcpai.gemini.model'     : "${configProps['jcpai.gemini.model']}",
+            'jcpai.gemini.api.key'   : "${configProps['jcpai.gemini.api.key']}",
+            'jcpai.prompt.cache.file': "${project.projectDir}/jcp_ai_gemini_cache.json",
+            'java.release'           : 17
+    ]
+}
+task(changeSourceFolder) {
+    sourceSets.main.java.srcDirs = [preprocess.target]
+}.dependsOn preprocess
+
+
+compileJava.dependsOn preprocess
+
+gradle.buildFinished {
+    println("Incoming preprocess files: " + preprocess.incomingFiles.size())
+    println("Resulted preprocess files: " + preprocess.outcomingFiles.size())
+}
