@@ -125,7 +125,7 @@
         <dependency>
             <groupId>com.igormaznitsa</groupId>
             <artifactId>jcp-ai-commons</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1-SNAPSHOT</version>
             <optional>true</optional>
         </dependency>
         <dependency>

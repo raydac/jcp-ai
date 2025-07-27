@@ -9,7 +9,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jcpai.test.version>1.0.0</jcpai.test.version>
+        <jcpai.test.version>1.0.1-SNAPSHOT</jcpai.test.version>
         <jcp.test.version>7.2.1</jcp.test.version>
         <junit.version>5.13.3</junit.version>
         <maven.compiler.release>11</maven.compiler.release>
