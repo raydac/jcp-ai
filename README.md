@@ -8,11 +8,11 @@
 
 # Changelog
 
-- 1.0.1-SNAPSHOT
+## 1.0.1-SNAPSHOT
  - improved prompt cache file processing, added threshold to remove old responses and variable
   `jcpai.prompt.cache.file.gc.threshold` to define unuse threshold
 
-- 1.0.0 (22-jul-2025)
+## 1.0.0 (22-jul-2025)
  - added adapter jcp-ai-anthropic 1.0.0
  - added adapter jcp-ai-gemini 1.0.0
  - added adapter jcp-ai-openai 1.0.0
