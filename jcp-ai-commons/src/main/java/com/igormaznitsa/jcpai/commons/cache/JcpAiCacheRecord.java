@@ -16,6 +16,7 @@ public class JcpAiCacheRecord {
   private String result;
   private String fileName;
   private int line;
+  private long sinceUse;
 
   private static final JsonBuilder.PrettyPrint PRETTY_JSON =
       new JsonBuilder.PrettyPrint(
@@ -38,6 +39,7 @@ public class JcpAiCacheRecord {
       this.result = value.getString("result").string();
       this.fileName = value.getString("fileName").string();
       this.line = value.getNumber("line").intValue();
+      this.sinceUse = value.has("sinceUse") ? value.getNumber("sinceUse").intValue() : 0;
     } else {
       throw new IllegalArgumentException("Expected JSON object: " + jsonObject);
     }
@@ -51,7 +53,16 @@ public class JcpAiCacheRecord {
             .addString("fileName", this.fileName)
             .addNumber("line", this.line)
             .addString("result", this.result)
+            .addNumber("sinceUse", this.sinceUse)
     );
+  }
+
+  public long getSinceUse() {
+    return this.sinceUse;
+  }
+
+  public void setSinceUse(final long value) {
+    this.sinceUse = value;
   }
 
   public UUID getUuid() {

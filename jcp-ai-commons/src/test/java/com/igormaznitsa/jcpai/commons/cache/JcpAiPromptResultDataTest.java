@@ -18,7 +18,7 @@ class JcpAiPromptResultDataTest {
     cache.put("key4", "test.java", 1,"test 4");
 
     final StringWriter writer = new StringWriter();
-    cache.write(writer);
+    cache.write(writer, x -> true);
 
     //System.out.println(writer.toString());
 

@@ -8,6 +8,8 @@ import java.io.Writer;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.hisp.dhis.jsontree.Json;
 import org.hisp.dhis.jsontree.JsonArray;
 import org.hisp.dhis.jsontree.JsonMixed;
@@ -66,11 +68,18 @@ public class JcpAiPromptResultData {
     this.changed = changed;
   }
 
-  public synchronized void write(final Writer writer) throws IOException {
-    final JsonArray array = Json.array(x -> this.records.values().stream().map(
+  public synchronized void write(final Writer writer, final Predicate<JcpAiCacheRecord> filter)
+      throws IOException {
+    final JsonArray array = Json.array(x -> this.records.values().stream()
+        .filter(filter)
+        .map(
             JcpAiCacheRecord::toJsonNode)
         .forEach(x::addElement));
     writer.write(array.toJson());
     writer.flush();
+  }
+
+  public Stream<JcpAiCacheRecord> stream() {
+    return this.records.values().stream();
   }
 }

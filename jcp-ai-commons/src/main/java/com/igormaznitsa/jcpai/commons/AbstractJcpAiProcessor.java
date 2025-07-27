@@ -4,7 +4,6 @@ import static com.igormaznitsa.jcpai.commons.StringUtils.AI_PROMPT_PREFIX;
 import static com.igormaznitsa.jcpai.commons.StringUtils.leftTrim;
 import static java.util.stream.Collectors.joining;
 
-import com.igormaznitsa.jcpai.commons.cache.JcpAiPromptCacheFile;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.CommentTextProcessor;
 import com.igormaznitsa.jcp.context.PreprocessingState;
@@ -13,15 +12,18 @@ import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
 import com.igormaznitsa.jcp.expression.ValueType;
 import com.igormaznitsa.jcp.logger.PreprocessorLogger;
+import com.igormaznitsa.jcpai.commons.cache.JcpAiPromptCacheFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -35,6 +37,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
       "You are a highly skilled senior software engineer with deep expertise in algorithms and advanced Java development, including core Java concepts and best practices. Respond with precise, efficient, and idiomatic Java solutions, and explain your reasoning when needed.";
 
   public static final String PROPERTY_JCPAI_PROMPT_CACHE = "jcpai.prompt.cache.file";
+  public static final String PROPERTY_JCPAI_PROMPT_CACHE_GC_THRESHOLD =
+      "jcpai.prompt.cache.file.gc.threshold";
   public static final String PROPERTY_JCPAI_ONLY_PROCESSOR = "jcpai.prompt.only.processor";
   public static final String PROPERTY_JCPAI_TEMPERATURE = "jcpai.prompt.temperature";
   public static final String PROPERTY_JCPAI_TIMEOUT_MS = "jcpai.prompt.timeout.ms";
@@ -44,8 +48,9 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
   public static final String PROPERTY_JCPAI_MAX_TOKENS = "jcpai.prompt.max.tokens";
   public static final String PROPERTY_JCPAI_INSTRUCTION_SYSTEM = "jcpai.prompt.instruction.system";
 
-  private static final MessageDigest SHA512_DIGEST;
-  private static final MessageDigest MD5_DIGEST;
+  public static final long DEFAULT_CACHE_GC_THRESHOLD = 15;
+  public static final MessageDigest SHA512_DIGEST;
+  public static final MessageDigest MD5_DIGEST;
 
   static {
     try {
@@ -56,7 +61,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
     }
   }
 
-  private final Map<File, JcpAiPromptCacheFile> promptFiles = new ConcurrentHashMap<>();
+  private final Map<File, Map.Entry<JcpAiPromptCacheFile, Set<String>>> promptFiles =
+      new ConcurrentHashMap<>();
   private PreprocessorLogger logger;
 
   private static String makeCachePromptKey(final List<String> prompt) {
@@ -181,6 +187,97 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
     throw new IllegalArgumentException("Unexpected value for " + varName + " : " + value);
   }
 
+  private static File findPromptCacheFile(final PreprocessorContext context,
+                                          final PreprocessingState state) {
+    final Value value = findPreprocessorVar(PROPERTY_JCPAI_PROMPT_CACHE, context).orElse(null);
+    if (value == null) {
+      return null;
+    }
+    if (value.getType() != ValueType.STRING) {
+      throw new IllegalArgumentException(
+          "Detected non-string value for " + PROPERTY_JCPAI_PROMPT_CACHE +
+              " in the preprocessor context");
+    }
+
+    final String path = value.asString();
+
+    final File pathFile = new File(path);
+    final File file;
+    if (pathFile.isAbsolute()) {
+      file = pathFile;
+    } else {
+      file = new File(state.peekFile().getFile().getParentFile(), pathFile.getPath());
+    }
+    if (context.isFileInBaseDir(file)) {
+      return file;
+    } else {
+      throw new SecurityException(
+          "Detected attempt to get access or created a prompt cache file outside of the project, check your code: "
+              + file.getAbsolutePath());
+    }
+  }
+
+  @Override
+  public final void onContextStopped(
+      final PreprocessorContext context,
+      final Throwable error) {
+    if (error == null) {
+      logInfo(
+          "stopping processor, cached prompt map contains " + this.promptFiles.size() + " file(s)");
+    } else {
+      logError("stopping processor with error: " + error.getMessage());
+    }
+
+    final long gcThreshold =
+        findPreprocessorLongVariable(PROPERTY_JCPAI_PROMPT_CACHE_GC_THRESHOLD, context).orElse(
+            DEFAULT_CACHE_GC_THRESHOLD);
+    if (gcThreshold <= 0) {
+      this.logWarn("GC threshold disabled for prompt file caches");
+    } else {
+      this.logInfo("GC threshold is " + gcThreshold + " for prompt file caches");
+    }
+
+    this.promptFiles.values()
+        .forEach(x -> {
+          try {
+            final JcpAiPromptCacheFile cacheContainer = x.getKey();
+            final Set<String> detectedPrompts = x.getValue();
+
+            final Set<String> removedPrompts = new HashSet<>();
+            cacheContainer.stream().forEach(y -> {
+              if (detectedPrompts.contains(y.getKey())) {
+                if (y.getSinceUse() != 0) {
+                  cacheContainer.markChanged();
+                  y.setSinceUse(0);
+                }
+              } else {
+                if (gcThreshold > 0) {
+                  final long newGc = y.getSinceUse() + 1L;
+                  y.setSinceUse(newGc);
+                  cacheContainer.markChanged();
+                  if (newGc > gcThreshold) {
+                    removedPrompts.add(y.getKey());
+                  }
+                }
+              }
+            });
+            this.logInfo(
+                "Detected " + removedPrompts.size() + " prompt(s) marked for GC in cache file " +
+                    x.getKey().getPath());
+            if (cacheContainer.flush(y -> !removedPrompts.contains(y.getKey()))) {
+              logInfo("Written prompt cache file: " + x.getKey().getPath());
+            }
+          } catch (IOException ex) {
+            logError(
+                "Can't flush prompt cache file " + x.getKey().getPath() + " : " + ex.getMessage());
+          }
+        });
+    this.promptFiles.clear();
+
+    this.onProcessorStopped(context, error);
+    this.logger = null;
+  }
+
   public Optional<Float> findParamTemperature(final PreprocessorContext context) {
     return findPreprocessorFloatVariable(PROPERTY_JCPAI_TEMPERATURE, context);
   }
@@ -211,36 +308,6 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
 
   public Optional<Long> findParamMaxTokens(final PreprocessorContext context) {
     return findPreprocessorLongVariable(PROPERTY_JCPAI_MAX_TOKENS, context);
-  }
-
-  private static File findPromptCacheFile(final PreprocessorContext context,
-                                          final PreprocessingState state) {
-    final Value value = findPreprocessorVar(PROPERTY_JCPAI_PROMPT_CACHE, context).orElse(null);
-    if (value == null) {
-      return null;
-    }
-    if (value.getType() != ValueType.STRING) {
-      throw new IllegalArgumentException(
-          "Detected non-string value for " + PROPERTY_JCPAI_PROMPT_CACHE +
-              " in the preprocessor context");
-    }
-
-    final String path = value.asString();
-
-    final File pathFile = new File(path);
-    final File file;
-    if (pathFile.isAbsolute()) {
-      file = pathFile;
-    } else {
-      file = new File(state.peekFile().getFile().getParentFile(), pathFile.getPath());
-    }
-    if (context.isFileInBaseDir(file)) {
-      return file;
-    } else {
-      throw new SecurityException(
-          "Detected attempt to get access or created a prompt cache file outside of the project, check your code: "
-              + file.getAbsolutePath());
-    }
   }
 
   @Override
@@ -280,33 +347,6 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
 
   }
 
-  @Override
-  public final void onContextStopped(
-      final PreprocessorContext context,
-      final Throwable error) {
-    if (error == null) {
-      logInfo(
-          "stopping processor, cached prompt map contains " + this.promptFiles.size() + " file(s)");
-    } else {
-      logError("stopping processor with error: " + error.getMessage());
-    }
-
-    this.promptFiles.values()
-        .forEach(x -> {
-          try {
-            if (x.flush()) {
-              logInfo("Written prompt cache file: " + x.getPath());
-            }
-          } catch (IOException ex) {
-            logError("Can't flush prompt cache file " + x.getPath() + " : " + ex.getMessage());
-          }
-        });
-    this.promptFiles.clear();
-
-    this.onProcessorStopped(context, error);
-    this.logger = null;
-  }
-
   protected void onProcessorStopped(
       PreprocessorContext context,
       Throwable error) {
@@ -327,19 +367,19 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
     final String[] lines = uncommentedText.split("\\R");
 
     final String indent =
-        context.isPreserveIndents() ? " " .repeat(recommendedIndent) : "";
+        context.isPreserveIndents() ? " ".repeat(recommendedIndent) : "";
 
     final List<TextBlock> detectedTextBlocks = splitToTextBlocks(positionInfo, lines);
 
     final File currentPromptCache = findPromptCacheFile(context, state);
-    final JcpAiPromptCacheFile cacheFile;
+    final Map.Entry<JcpAiPromptCacheFile, Set<String>> cacheFilePair;
     if (currentPromptCache == null) {
-      cacheFile = null;
+      cacheFilePair = null;
     } else {
-      cacheFile = this.promptFiles.computeIfAbsent(currentPromptCache, x -> {
+      cacheFilePair = this.promptFiles.computeIfAbsent(currentPromptCache, x -> {
         try {
           logInfo("registering prompt cache file: " + x);
-          return new JcpAiPromptCacheFile(x.toPath());
+          return Map.entry(new JcpAiPromptCacheFile(x.toPath()), ConcurrentHashMap.newKeySet());
         } catch (IOException ex) {
           throw new RuntimeException("Can't create or open the prompt cache file for error: " + x,
               ex);
@@ -349,7 +389,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
 
     final long start = System.currentTimeMillis();
     try {
-      final String sources = positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
+      final String sources =
+          positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
       final List<String> resultLines = new ArrayList<>();
       for (final TextBlock block : detectedTextBlocks) {
         if (block instanceof JustTextBlock) {
@@ -357,9 +398,11 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
         } else if (block instanceof JcpAiPrompt) {
           final String promptKey;
           String cachedResponse = null;
-          if (cacheFile != null) {
+          if (cacheFilePair != null) {
             promptKey = makeCachePromptKey(block.lines);
-            cachedResponse = cacheFile.getCache().find(promptKey);
+            cachedResponse = cacheFilePair.getKey().getCache().find(promptKey);
+            cacheFilePair.getValue().add(promptKey);
+            logDebug("registered use of prompt key for " + sources + " : " + promptKey);
           } else {
             promptKey = null;
           }
@@ -372,14 +415,15 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
             ).split("\\R"));
             if (promptKey != null) {
               logInfo("caching result for " + sources);
-              cacheFile.getCache().put(promptKey, block.positionInfo.getFile().getName(),
-                  block.positionInfo.getLineNumber(), String.join("\n", responseLines));
+              cacheFilePair.getKey().getCache()
+                  .put(promptKey, block.positionInfo.getFile().getName(),
+                      block.positionInfo.getLineNumber(), String.join("\n", responseLines));
             }
             resultLines.addAll(responseLines);
           } else {
             resultLines.addAll(List.of(cachedResponse.split("\\R")));
-            logInfo("found cached prompt response for " + sources
-                + " in cache " + cacheFile.getPath().getFileName());
+            this.logInfo("found cached prompt response for " + sources
+                + " in cache file " + cacheFilePair.getKey().getPath().getFileName());
           }
         }
       }

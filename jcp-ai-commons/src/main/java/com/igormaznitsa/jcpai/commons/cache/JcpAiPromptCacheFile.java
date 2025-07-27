@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public final class JcpAiPromptCacheFile {
 
@@ -27,15 +29,27 @@ public final class JcpAiPromptCacheFile {
     this.cache.read(new StringReader(content));
   }
 
+  public boolean isChanged() {
+    return this.cache.isChanged();
+  }
+
+  public void markChanged() {
+    this.cache.setChange(true);
+  }
+
   public JcpAiPromptResultData getCache() {
     return this.cache;
   }
 
-  public boolean flush() throws IOException {
+  public Stream<JcpAiCacheRecord> stream() {
+    return this.cache.stream();
+  }
+
+  public boolean flush(final Predicate<JcpAiCacheRecord> filter) throws IOException {
     if (this.cache.isChanged()) {
       final StringWriter writer = new StringWriter(16384);
-      this.cache.write(writer);
-      Files.write(this.path, writer.toString().getBytes(StandardCharsets.UTF_8),
+      this.cache.write(writer, filter);
+      Files.writeString(this.path, writer.toString(), StandardCharsets.UTF_8,
           StandardOpenOption.CREATE);
       return true;
     }
