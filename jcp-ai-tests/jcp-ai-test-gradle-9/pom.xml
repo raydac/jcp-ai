@@ -23,6 +23,7 @@
 
     <properties>
         <gradle9.executable>gradle9</gradle9.executable>
+        <gemini.ai.client>1.10.0</gemini.ai.client>
     </properties>
 
     <build>
@@ -76,6 +77,9 @@
                                 <argument>--rerun-tasks</argument>
                                 <argument>--scan</argument>
                                 <argument>--full-stacktrace</argument>
+                                <argument>-Pjcpai_test_version=${jcpai.test.version}</argument>
+                                <argument>-Pjcp_test_version=${jcp.test.version}</argument>
+                                <argument>-Pgemini_ai_client=${gemini.ai.client}</argument>
                             </arguments>
                         </configuration>
                         <goals>

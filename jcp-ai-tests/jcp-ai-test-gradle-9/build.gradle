@@ -4,19 +4,15 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.igormaznitsa:jcp:7.2.1'
-        classpath 'com.igormaznitsa:jcp-ai-gemini:1.0.1-SNAPSHOT'
-        classpath 'com.google.genai:google-genai:1.10.0'
+        classpath "com.igormaznitsa:jcp:${jcp_test_version}"
+        classpath "com.igormaznitsa:jcp-ai-gemini:${jcpai_test_version}"
+        classpath "com.google.genai:google-genai:${gemini_ai_client}"
     }
 }
 
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'com.igormaznitsa.jcp'
-
-application {
-    mainClass = 'hello.world'
-}
 
 repositories {
     mavenLocal()
@@ -49,8 +45,6 @@ propsFile.withInputStream { configProps.load(it) }
 
 preprocess {
     sources = sourceSets.main.java.srcDirs
-    sourceEncoding = 'UTF-8'
-    targetEncoding = 'UTF-8'
     allowBlocks = true
     preserveIndents = true
     keepComments = 'remove_jcp_only'

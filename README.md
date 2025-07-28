@@ -9,17 +9,20 @@
 # Changelog
 
 ## 1.0.1-SNAPSHOT
- - improved prompt cache file processing, added threshold to remove old responses and variable
+
+- improved prompt cache file processing, added threshold to remove old responses and variable
   `jcpai.prompt.cache.file.gc.threshold` to define unuse threshold
 
 ## 1.0.0 (22-jul-2025)
- - added adapter jcp-ai-anthropic 1.0.0
- - added adapter jcp-ai-gemini 1.0.0
- - added adapter jcp-ai-openai 1.0.0
+
+- added adapter jcp-ai-anthropic 1.0.0
+- added adapter jcp-ai-gemini 1.0.0
+- added adapter jcp-ai-openai 1.0.0
 
 # Pre-word
 
-A long time ago, I created [one of the first Java preprocessors (called JCP)](https://github.com/raydac/java-comment-preprocessor) to make
+A long time ago, I
+created [one of the first Java preprocessors (called JCP)](https://github.com/raydac/java-comment-preprocessor) to make
 building projects easier. The preprocessor's business is to read and change the program text. LLMs also work by
 generating text based on given input, so combining them with a preprocessor is a logical step.
 
@@ -34,7 +37,8 @@ for these build tools as well.
 
 # How it works?
 
-JCP-AI is a set of extension libraries that provide specialized services capable of calling external LLMs to process text. I’ve
+JCP-AI is a set of extension libraries that provide specialized services capable of calling external LLMs to process
+text. I’ve
 added support for LLMs that have official open-source Java clients.   
 Currently, it provides connectors for:
 
@@ -49,16 +53,89 @@ appear in its classpath for them to become automatically available. For better f
 client libraries don’t include any client code themselves; instead, they rely on a client library already present in the
 classpath.
 
+# Example for Gradle
+
+For Gradle you should improve your `gradle.build` to load and include JCP, JCP-AI and a LLM client library into class
+path during preprocessing.
+
+## Make build.gradle
+
+In Gradle 9 the build script may look
+like [the Gradle build script for the test](jcp-ai-tests/jcp-ai-test-gradle-9/build.gradle)
+
+```groovy
+buildscript {
+  repositories {
+    mavenLocal()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "com.igormaznitsa:jcp:7.2.1"
+    classpath "com.igormaznitsa:jcp-ai-gemini:1.0.0"
+    classpath "com.google.genai:google-genai:1.10.0"
+  }
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'com.igormaznitsa.jcp'
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+dependencies {
+  testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+  testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.4'
+}
+
+test {
+  useJUnitPlatform()
+}
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
+}
+
+def propsFile = file("secret_properties.properties")
+def configProps = new Properties()
+propsFile.withInputStream { configProps.load(it) }
+
+preprocess {
+  sources = sourceSets.main.java.srcDirs
+  allowBlocks = true
+  preserveIndents = true
+  keepComments = 'remove_jcp_only'
+  vars = [
+          'jcpai.gemini.model'     : "${configProps['jcpai.gemini.model']}",
+          'jcpai.gemini.api.key'   : "${configProps['jcpai.gemini.api.key']}",
+          'jcpai.prompt.cache.file': "${project.projectDir}/jcp_ai_gemini_cache.json",
+          'java.release'           : 17
+  ]
+}
+
+task(changeSourceFolder) {
+  sourceSets.main.java.srcDirs = [preprocess.target]
+}.dependsOn preprocess
+
+compileJava.dependsOn preprocess
+```
+
 # Example for Maven
 
 Let's take a look at a small example, how to inject a bit AI into a Maven project and get some its profit during build.
 
 ## Tune pom.xml
 
-As the first step, we should tune the project pom.xml, inject [JCP](https://github.com/raydac/java-comment-preprocessor) into build process and include JCP-AI. Let's use
+As the first step, we should tune the project pom.xml, inject [JCP](https://github.com/raydac/java-comment-preprocessor)
+into build process and include JCP-AI. Let's use
 Gemini AI as target LLM. The build section in the case should look like the snippet below:
 
 ```xml
+
 <build>
     <plugins>
         <plugin>
@@ -90,9 +167,9 @@ Gemini AI as target LLM. The build section in the case should look like the snip
                 <version>1.0.0</version>
               </dependency>
               <dependency>
-                 <groupId>com.google.genai</groupId>
-                 <artifactId>google-genai</artifactId>
-                 <version>1.9.0</version>
+                <groupId>com.google.genai</groupId>
+                <artifactId>google-genai</artifactId>
+                <version>1.9.0</version>
               </dependency>
             </dependencies>
         </plugin>
