@@ -53,6 +53,69 @@ appear in its classpath for them to become automatically available. For better f
 client libraries don’t include any client code themselves; instead, they rely on a client library already present in the
 classpath.
 
+## Inject prompt into sources
+
+For work with prompts as text blocks I recommend you to turn on text block mode for JCP with flag `allowBlocks`, it
+allows add some prompts directly into sources like below
+
+```java
+//$"""AI> code level is Java /*$mvn.project.property.maven.compiler.release$*/
+//$"""AI> generate method implements fastest sort algorithm with minimal memory overhead, the speed is priority:
+//$"""AI>     public static int [] fastSort(final int [] array, final boolean asc)
+//$"""AI> where arguments are
+//$"""AI>   int [] array is array to be sorted
+//$"""AI>   asc is flag shows if true then ascending order for result, descending order otherwise
+//$"""AI> it returns the same incoming array if it is null, empty or single value array, else returns new version of array with sorted values.
+//$"""AI> the method should contain whole implementation of sort algorithm without any use of third side libraries, helpers and utility classes
+//$"""AI> can't have additional methods and functions, all implementation must be as the single method
+//$"""AI>
+//$"""AI> special requirements and restrictions:
+//$"""AI> 1. the method has javadoc header description
+//$"""AI> 2. the method doesn't contain any internal method comment, only lines of code
+//$"""AI> 3. don't use both single line comments and block comments inside the method code
+//$"""AI> 4. if any import needed then use canonical class name and don't add import section
+//$"""AI> 5. it is only method, must not have any class wrapping
+//#-
+public static int[] fastSort(final int[] array, final boolean asc) {
+  throw new UnsupportedOperationException("not generated");
+}
+//#+
+```
+
+All sequent lines marked as `//$"""AI>` will be recognized as single prompt, they will be accumulated as text block
+and provided to JCP-AI for processing. After processing, the result will fully replace the prompt text.
+The result sources can be found in the maven project folder by path `target/generated-sources/preprocessed`.
+
+## Tune JCP-AI
+
+Requests to LLMs are not cheap, so I have provided way to cache their responses. We can provide JCP global variable
+`jcpai.prompt.cache.file` with path to caching file through preprocessor config and JCP-AI starts save gotten prompts in
+the defined file as JSON. During every call it will be looking for already presented response for a prompt in the cache
+and inject existing cached text if it is presented.
+
+# JCP-AI parameters
+
+All parameters of JCP-AI can be provided as local or global variables of JCP, in the plugin it is the `var` config
+section.
+
+## Common variables
+
+JCP-AI provides set of common parameters for all connectors:
+
+- __jcpai.prompt.cache.file__ - path to a cache file which contains prompt results in JSON format
+- __jcpai.prompt.only.processor__ - if multiple JCP-AI connectors detected as services then all they will be called for
+  same prompt and their result will be accumulated, but this parameter allows to specify only connector which will
+  be called in the case if needed.
+- __jcpai.prompt.temperature__ - float value to define __temperature__ for LLM process
+- __jcpai.prompt.timeout.ms__ - integer number of milliseconds for requests timeout, it will be provided directly
+  to the calling REST client and its scope of responsibility
+- __jcpai.prompt.top.p__ - TopP parameter for LLM process if client supports it
+- __jcpai.prompt.top.k__ - TopK parameter for LLM process if client supports it
+- __jcpai.prompt.seed__ - Seed parameter for LLM process if client supports it
+- __jcpai.prompt.max.tokens__ - limit number for output tokens for LLM process if client supports it
+- __jcpai.prompt.instruction.system__ - text to be sent as system instruction with prompt, if not defined then default
+  one will be sent
+
 # Example for Gradle
 
 For Gradle you should improve your `gradle.build` to load and include JCP, JCP-AI and a LLM client library into class
@@ -181,67 +244,3 @@ Through the dependency section of the JCP plugin, we inject JCP-AI GeminiAI conn
 and [its official REST client library](https://github.com/googleapis/java-genai). I specially don't include dependencies
 to clients into JCP-AI connectors to change easily their version and don't keep dependency hard link between
 dependencies.
-
-## Inject prompt into sources
-
-For work with prompts as text blocks I recommend you to turn on text block mode for JCP with flag `allowBlocks`, it
-allows add some prompts directly into sources like below
-
-```java
-//$"""AI> code level is Java /*$mvn.project.property.maven.compiler.release$*/
-//$"""AI> generate method implements fastest sort algorithm with minimal memory overhead, the speed is priority:
-//$"""AI>     public static int [] fastSort(final int [] array, final boolean asc)
-//$"""AI> where arguments are
-//$"""AI>   int [] array is array to be sorted
-//$"""AI>   asc is flag shows if true then ascending order for result, descending order otherwise
-//$"""AI> it returns the same incoming array if it is null, empty or single value array, else returns new version of array with sorted values.
-//$"""AI> the method should contain whole implementation of sort algorithm without any use of third side libraries, helpers and utility classes
-//$"""AI> can't have additional methods and functions, all implementation must be as the single method
-//$"""AI>
-//$"""AI> special requirements and restrictions:
-//$"""AI> 1. the method has javadoc header description
-//$"""AI> 2. the method doesn't contain any internal method comment, only lines of code
-//$"""AI> 3. don't use both single line comments and block comments inside the method code
-//$"""AI> 4. if any import needed then use canonical class name and don't add import section
-//$"""AI> 5. it is only method, must not have any class wrapping
-//#-
-public static int[] fastSort(final int[] array, final boolean asc) {
-  throw new UnsupportedOperationException("not generated");
-}
-//#+
-```
-
-All sequent lines marked as `//$"""AI>` will be recognized as single prompt, they will be accumulated as text block
-and provided to JCP-AI for processing. After processing, the result will fully replace the prompt text.
-The result sources can be found in the maven project folder by path `target/generated-sources/preprocessed`.
-
-## Tune JCP-AI
-
-Requests to LLMs are not cheap, so I have provided way to cache their responses. We can provide JCP global variable
-`jcpai.prompt.cache.file` with path to caching file through preprocessor config and JCP-AI starts save gotten prompts in
-the defined file as JSON. During every call it will be looking for already presented response for a prompt in the cache
-and inject existing cached text if it is presented.
-
-# JCP-AI parameters
-
-All parameters of JCP-AI can be provided as local or global variables of JCP, in the plugin it is the `var` config
-section.
-
-## Common variables
-
-JCP-AI provides set of common parameters for all connectors:
-
-- __jcpai.prompt.cache.file__ - path to a cache file which contains prompt results in JSON format
-- __jcpai.prompt.only.processor__ - if multiple JCP-AI connectors detected as services then all they will be called for
-  same prompt and their result will be accumulated, but this parameter allows to specify only connector which will
-  be called in the case if needed.
-- __jcpai.prompt.temperature__ - float value to define __temperature__ for LLM process
-- __jcpai.prompt.timeout.ms__ - integer number of milliseconds for requests timeout, it will be provided directly
-  to the calling REST client and its scope of responsibility
-- __jcpai.prompt.top.p__ - TopP parameter for LLM process if client supports it
-- __jcpai.prompt.top.k__ - TopK parameter for LLM process if client supports it
-- __jcpai.prompt.seed__ - Seed parameter for LLM process if client supports it
-- __jcpai.prompt.max.tokens__ - limit number for output tokens for LLM process if client supports it
-- __jcpai.prompt.instruction.system__ - text to be sent as system instruction with prompt, if not defined then default
-  one will be sent
-
