@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
 
   public static final String DEFAULT_SYSTEM_INSTRUCTION =
-      "You are a highly skilled senior software engineer with deep expertise in algorithms and advanced Java development, including core Java concepts and best practices. Respond with precise, efficient, and idiomatic Java solutions, and explain your reasoning when needed.";
+      "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code; you write production-quality, idiomatic, and maintainable code using the best practices (SOLID, DRY, KISS, YAGNI), with thoughtful structure, appropriate algorithms, minimal yet meaningful comments, and always aiming for clarity, efficiency, modularity, and extensibility in real-world software engineering scenarios.";
 
   public static final String PROPERTY_JCPAI_PROMPT_CACHE = "jcpai.prompt.cache.file";
   public static final String PROPERTY_JCPAI_PROMPT_CACHE_GC_THRESHOLD =
