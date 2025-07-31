@@ -53,10 +53,21 @@ appear in its classpath for them to become automatically available. For better f
 client libraries don’t include any client code themselves; instead, they rely on a client library already present in the
 classpath.
 
-## Inject prompt into sources
+# Inject prompts into sources
 
-For work with prompts as text blocks I recommend you to turn on text block mode for JCP with flag `allowBlocks`, it
-allows add some prompts directly into sources like below
+Prompts are written in the source code as single-line comments using `//$` or `//$$`, with the prefix `AI>` for
+single-line prompts, or `"""AI>` for multi-line prompts.
+
+To recognize `"""` as a single text block in **JCP 7.2.1**, the `allowBlocks` flag must be set to `true`.
+
+JCP also supports the `//#-` and `//#+` directives to control whether lines are included in the final output file:
+
+- `//#-` disables output (lines are excluded).
+- `//#+` enables output again.
+  This allows method stubs or prompts to be excluded from the final generated code.
+
+Below is an example of how to define a prompt to generate a method, and then replace that prompt with the result from a
+language model (LLM).
 
 ```java
 //$"""AI> code level is Java /*$mvn.project.property.maven.compiler.release$*/
@@ -86,7 +97,7 @@ All sequent lines marked as `//$"""AI>` will be recognized as single prompt, the
 and provided to JCP-AI for processing. After processing, the result will fully replace the prompt text.
 The result sources can be found in the maven project folder by path `target/generated-sources/preprocessed`.
 
-## Tune JCP-AI
+## JCP-AI tuning
 
 Requests to LLMs are not cheap, so I have provided way to cache their responses. We can provide JCP global variable
 `jcpai.prompt.cache.file` with path to caching file through preprocessor config and JCP-AI starts save gotten prompts in
@@ -116,12 +127,14 @@ JCP-AI provides set of common parameters for all connectors:
 - __jcpai.prompt.instruction.system__ - text to be sent as system instruction with prompt, if not defined then default
   one will be sent
 
-# Example for Gradle
+# Tuning of build systems
+
+## Gradle
 
 For Gradle you should improve your `gradle.build` to load and include JCP, JCP-AI and a LLM client library into class
 path during preprocessing.
 
-## Make build.gradle
+### Make build.gradle
 
 In Gradle 9 the build script may look
 like [the Gradle build script for the test](jcp-ai-tests/jcp-ai-test-gradle-9/build.gradle)
@@ -187,11 +200,11 @@ task(changeSourceFolder) {
 compileJava.dependsOn preprocess
 ```
 
-# Example for Maven
+## Maven
 
 Let's take a look at a small example, how to inject a bit AI into a Maven project and get some its profit during build.
 
-## Tune pom.xml
+### Tuning of pom.xml
 
 As the first step, we should tune the project pom.xml, inject [JCP](https://github.com/raydac/java-comment-preprocessor)
 into build process and include JCP-AI. Let's use
