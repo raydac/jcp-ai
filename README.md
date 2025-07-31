@@ -127,6 +127,13 @@ JCP-AI provides set of common parameters for all connectors:
 - __jcpai.prompt.instruction.system__ - text to be sent as system instruction with prompt, if not defined then default
   one will be sent
 
+# How to build?
+
+It can be built by Maven with just `mvn clean install` in the root project folder.   
+If you want build and start tests then you can use the `it` profile and the command line will be
+`mvn clean install -Pit` but `secret_properties.properties` files should be prepared in test projects to provide model
+parameters.
+
 # Tuning of build systems
 
 ## Gradle
