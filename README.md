@@ -104,12 +104,12 @@ Requests to LLMs are not cheap, so I have provided way to cache their responses.
 the defined file as JSON. During every call it will be looking for already presented response for a prompt in the cache
 and inject existing cached text if it is presented.
 
-# JCP-AI parameters
+### JCP-AI parameters
 
 All parameters of JCP-AI can be provided as local or global variables of JCP, in the plugin it is the `var` config
 section.
 
-## Common variables
+### Common variables
 
 JCP-AI provides set of common parameters for all connectors:
 
