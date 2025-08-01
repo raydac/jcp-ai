@@ -10,14 +10,19 @@
 
 ## 1.0.1-SNAPSHOT
 
+- jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.10.0`
+- jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.2.0`
+- jcp-ai-openai uses as base library `com.openai:openai-java:2.20.1`
 - improved prompt cache file processing, added threshold to remove old responses and variable
-  `jcpai.prompt.cache.file.gc.threshold` to define unuse threshold
+  `jcpai.prompt.cache.file.gc.threshold` to define unuse level
 
 ## 1.0.0 (22-jul-2025)
 
 - added adapter jcp-ai-anthropic 1.0.0
 - added adapter jcp-ai-gemini 1.0.0
 - added adapter jcp-ai-openai 1.0.0
+
+[Full changelog](changelog.txt)
 
 # Pre-word
 
@@ -64,7 +69,8 @@ JCP also supports the `//#-` and `//#+` directives to control whether lines are 
 
 - `//#-` disables output (lines are excluded).
 - `//#+` enables output again.
-  This allows method stubs or prompts to be excluded from the final generated code.
+
+This combination of directives allows method stubs to be excluded from the final generated code.
 
 Below is an example of how to define a prompt to generate a method, and then replace that prompt with the result from a
 language model (LLM).
