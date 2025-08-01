@@ -13,12 +13,17 @@
         <jcp.test.version>7.2.1</jcp.test.version>
         <junit.version>5.13.3</junit.version>
         <maven.compiler.release>11</maven.compiler.release>
+
+        <client.version.gemini>1.10.0</client.version.gemini>
+        <client.version.openai>2.20.1</client.version.openai>
+        <client.version.anthropic>2.2.0</client.version.anthropic>
     </properties>
 
     <modules>
         <module>jcp-ai-test-gemini</module>
         <module>jcp-ai-test-anthropics</module>
         <module>jcp-ai-test-openai</module>
+        <module>jcp-ai-test-deepseek</module>
     </modules>
 
     <dependencies>

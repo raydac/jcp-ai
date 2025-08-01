@@ -1,0 +1,11 @@
+[
+  {
+    "uuid": "826c1559-024f-4988-abf9-146d99c56968",
+    "instant": "2025-08-01T22:24:08.149602603Z",
+    "key": "tBeMqvVnM5QcBjUZ/+TxUZ6Fl+/Mojpm7a+Nw6rseeIua7lxs8DAJtOsc4M7um0lgBrmDWVfckUOuhfeVo2rLvc7R4KnHfmNwLY/CnFovNs=",
+    "fileName": "ArraySorter.java",
+    "line": 6,
+    "result": "/**\n * Sorts the given array using an optimized quicksort algorithm with minimal memory overhead.\n * The sorting order is determined by the asc flag (ascending if true, descending if false).\n * Returns the original array if it is null, empty, or has a single element; otherwise returns a new sorted array.\n *\n * @param array the array to be sorted\n * @param asc   the sorting order flag (true for ascending, false for descending)\n * @return the sorted array or original array if no sorting needed\n */\npublic static int[] fastSort(final int[] array, final boolean asc) {\n    if (array == null || array.length <= 1) {\n        return array;\n    }\n    int[] result = java.util.Arrays.copyOf(array, array.length);\n    quickSort(result, 0, result.length - 1, asc);\n    return result;\n}\n\nprivate static void quickSort(int[] arr, int low, int high, boolean asc) {\n    if (low < high) {\n        int pi = partition(arr, low, high, asc);\n        quickSort(arr, low, pi - 1, asc);\n        quickSort(arr, pi + 1, high, asc);\n    }\n}\n\nprivate static int partition(int[] arr, int low, int high, boolean asc) {\n    int pivot = arr[high];\n    int i = low - 1;\n    for (int j = low; j < high; j++) {\n        boolean condition = asc ? arr[j] < pivot : arr[j] > pivot;\n        if (condition) {\n            i++;\n            swap(arr, i, j);\n        }\n    }\n    swap(arr, i + 1, high);\n    return i + 1;\n}\n\nprivate static void swap(int[] arr, int i, int j) {\n    int temp = arr[i];\n    arr[i] = arr[j];\n    arr[j] = temp;\n}",
+    "sinceUse": 0
+  }
+]

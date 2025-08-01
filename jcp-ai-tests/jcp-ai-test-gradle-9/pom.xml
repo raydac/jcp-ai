@@ -16,14 +16,13 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.11.4</version>
+            <version>${junit.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
 
     <properties>
         <gradle9.executable>gradle9</gradle9.executable>
-        <gemini.ai.client>1.10.0</gemini.ai.client>
     </properties>
 
     <build>
@@ -79,7 +78,7 @@
                                 <argument>--full-stacktrace</argument>
                                 <argument>-Pjcpai_test_version=${jcpai.test.version}</argument>
                                 <argument>-Pjcp_test_version=${jcp.test.version}</argument>
-                                <argument>-Pgemini_ai_client=${gemini.ai.client}</argument>
+                                <argument>-Pgemini_ai_client=${client.version.gemini}</argument>
                             </arguments>
                         </configuration>
                         <goals>

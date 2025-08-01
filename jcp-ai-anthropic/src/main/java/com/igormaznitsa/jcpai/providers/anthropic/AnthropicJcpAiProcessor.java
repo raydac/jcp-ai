@@ -1,19 +1,17 @@
 package com.igormaznitsa.jcpai.providers.anthropic;
 
-import static com.igormaznitsa.jcpai.commons.StringUtils.normalizeJavaResponse;
-
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.TextBlock;
-import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
+import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import java.time.Duration;
 import java.util.stream.Collectors;
 
@@ -115,7 +113,7 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
     this.logInfo(
         String.format("got response for the prompt at %s, spent %d ms, response %d char(s)",
             sources, spent, result.length()));
-    result = normalizeJavaResponse(result);
+    result = this.makeResponseDistillation(context, result);
 
     if (result.isBlank()) {
       throw new IllegalStateException(

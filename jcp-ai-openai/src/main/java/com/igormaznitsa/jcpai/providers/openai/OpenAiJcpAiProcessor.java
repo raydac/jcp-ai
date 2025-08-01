@@ -1,13 +1,11 @@
 package com.igormaznitsa.jcpai.providers.openai;
 
-import static com.igormaznitsa.jcpai.commons.StringUtils.normalizeJavaResponse;
-
-import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
+import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
@@ -114,7 +112,8 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
     this.logInfo(
         String.format("got response for the prompt at %s, spent %d ms, response %d char(s)",
             sources, spent, response.length()));
-    response = normalizeJavaResponse(response);
+
+    response = this.makeResponseDistillation(context, response);
 
     if (response.isBlank()) {
       throw new IllegalStateException(

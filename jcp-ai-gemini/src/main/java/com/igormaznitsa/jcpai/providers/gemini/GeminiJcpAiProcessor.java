@@ -1,7 +1,5 @@
 package com.igormaznitsa.jcpai.providers.gemini;
 
-import static com.igormaznitsa.jcpai.commons.StringUtils.normalizeJavaResponse;
-
 import com.google.genai.Client;
 import com.google.genai.types.ClientOptions;
 import com.google.genai.types.Content;
@@ -9,12 +7,12 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.HttpOptions;
 import com.google.genai.types.Part;
-import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
+import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import java.util.Optional;
 
 public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
@@ -158,7 +156,9 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
     }
     logInfo(String.format("got response for the prompt at %s, spent %d ms, response %d char(s)",
         sources, spent, result.length()));
-    result = normalizeJavaResponse(result);
+
+    result = this.makeResponseDistillation(context, result);
+
     if (result.isBlank()) {
       throw new IllegalStateException(
           "Can't find code content in the result of request at " + sources);

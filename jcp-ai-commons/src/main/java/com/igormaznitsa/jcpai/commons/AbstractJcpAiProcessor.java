@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
 
   public static final String DEFAULT_SYSTEM_INSTRUCTION =
-      "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code; you write production-quality, idiomatic, and maintainable code using the best practices (SOLID, DRY, KISS, YAGNI), with thoughtful structure, appropriate algorithms, minimal yet meaningful comments, and always aiming for clarity, efficiency, modularity, and extensibility in real-world software engineering scenarios.";
+      "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code; you write production-quality, idiomatic, and maintainable code using the best practices (SOLID, DRY, KISS, YAGNI), with thoughtful structure, appropriate algorithms, minimal yet meaningful comments, and always aiming for clarity, efficiency, modularity, and extensibility in real-world software engineering scenarios. You generate only code as response for incoming prompts, without any markup symbols, thoughts or special symbols and sections. Work as a code writer.";
 
   public static final String PROPERTY_JCPAI_PROMPT_CACHE = "jcpai.prompt.cache.file";
   public static final String PROPERTY_JCPAI_PROMPT_CACHE_GC_THRESHOLD =
@@ -42,6 +42,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
   public static final String PROPERTY_JCPAI_ONLY_PROCESSOR = "jcpai.prompt.only.processor";
   public static final String PROPERTY_JCPAI_TEMPERATURE = "jcpai.prompt.temperature";
   public static final String PROPERTY_JCPAI_TIMEOUT_MS = "jcpai.prompt.timeout.ms";
+  public static final String PROPERTY_JCPAI_DISTILLATE_RESPONSE =
+      "jcpai.prompt.distillate.response";
   public static final String PROPERTY_JCPAI_TOP_P = "jcpai.prompt.top.p";
   public static final String PROPERTY_JCPAI_TOP_K = "jcpai.prompt.top.k";
   public static final String PROPERTY_JCPAI_SEED = "jcpai.prompt.seed";
@@ -161,7 +163,30 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
     if (value == null) {
       return Optional.empty();
     }
-    return Optional.of(value.asString());
+    return switch (value.getType()) {
+      case BOOLEAN -> Optional.of(value.asBoolean().toString());
+      case STRING -> Optional.of(value.asString());
+      case INT -> Optional.of(Long.toString(value.asLong()));
+      case FLOAT -> Optional.of(Float.toString(value.asFloat()));
+      default -> throw new IllegalArgumentException(
+          "Unexpected value type for " + variable + " : " + value);
+    };
+  }
+
+  private static Optional<Boolean> findPreprocessorBooleanVariable(final String variable,
+                                                                   final PreprocessorContext context) {
+    final Value value = findPreprocessorVar(variable, context).orElse(null);
+    if (value == null) {
+      return Optional.empty();
+    }
+    return switch (value.getType()) {
+      case BOOLEAN -> Optional.of(value.asBoolean());
+      case STRING -> Optional.of(Boolean.parseBoolean(value.asString().trim()));
+      case INT -> Optional.of(value.asLong() != 0);
+      case FLOAT -> Optional.of(value.asFloat() > 0.0f);
+      default -> throw new IllegalArgumentException(
+          "Unexpected value type for " + variable + " : " + value);
+    };
   }
 
   private static Optional<Long> findPreprocessorLongVariable(final String varName,
@@ -169,6 +194,9 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
     final Value value = findPreprocessorVar(varName, context).orElse(null);
     if (value == null) {
       return Optional.empty();
+    }
+    if (value.getType() == ValueType.BOOLEAN) {
+      return Optional.of(value.asBoolean() ? 1L : 0L);
     }
     if (value.getType() == ValueType.INT) {
       return Optional.of(value.asLong());
@@ -343,10 +371,22 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
     }
   }
 
+  /**
+   * Called on start of preprocessing
+   *
+   * @param context the preprocessor context, must not be null
+   * @since 1.0.0
+   */
   protected void onProcessorStarted(PreprocessorContext context) {
 
   }
 
+  /**
+   * Called on stop of preprocessing
+   *
+   * @param context the preprocessor context, must not be null
+   * @since 1.0.0
+   */
   protected void onProcessorStopped(
       PreprocessorContext context,
       Throwable error) {
@@ -480,6 +520,17 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
    * @since 1.0.0
    */
   public abstract String getProcessorTextId();
+
+  protected String makeResponseDistillation(final PreprocessorContext context,
+                                            final String response) {
+    if (findPreprocessorBooleanVariable(PROPERTY_JCPAI_DISTILLATE_RESPONSE, context).orElse(true)) {
+      logInfo("distilling the response");
+      return StringUtils.extractCodePart(response);
+    } else {
+      logDebug("distilling is turned off");
+      return response;
+    }
+  }
 
   private static final class JustTextBlock extends TextBlock {
     JustTextBlock(final List<String> text, final FilePositionInfo positionInfo) {
