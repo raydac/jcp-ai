@@ -13,6 +13,8 @@
 - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.10.0`
 - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.2.0`
 - jcp-ai-openai uses as base library `com.openai:openai-java:2.20.1`
+- added boolean flag `jcpai.prompt.distillate.response` to disable postprocessing of LLM response to extract code , by
+  default it is turned on
 - improved prompt cache file processing, added threshold to remove old responses and variable
   `jcpai.prompt.cache.file.gc.threshold` to define unuse level
 

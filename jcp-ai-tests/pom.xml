@@ -49,6 +49,41 @@
 
     <profiles>
         <profile>
+            <id>clear-cache</id>
+            <modules>
+                <module>jcp-ai-test-gradle-9</module>
+            </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>clear-prompt-cache</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration>
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <verbose>true</verbose>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${project.basedir}</directory>
+                                            <includes>
+                                                <include>jcp_ai_*_cache.json</include>
+                                            </includes>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>gradle</id>
             <modules>
                 <module>jcp-ai-test-gradle-9</module>
