@@ -78,7 +78,7 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
 
       timeout.ifPresent(x -> httpBuilder.timeout(x.intValue()));
       baseUrl.ifPresent(x -> {
-        this.logDebug("detected provided base url: " + x);
+        this.logWarn("non-default API base url: " + x);
         httpBuilder.baseUrl(x);
       });
 

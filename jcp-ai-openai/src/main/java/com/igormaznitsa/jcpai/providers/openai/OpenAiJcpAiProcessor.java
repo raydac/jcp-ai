@@ -70,7 +70,7 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
         .ifPresent(builder::project);
 
     findBaseUrl(PROPERTY_OPENAI_BASE_URL, context).ifPresent(x -> {
-      this.logDebug("detected provided base url: " + x);
+      this.logWarn("non-default API base url: " + x);
       builder.baseUrl(x);
     });
     findTimeoutMs(context).ifPresent(x -> builder.timeout(Duration.ofMillis(x)));

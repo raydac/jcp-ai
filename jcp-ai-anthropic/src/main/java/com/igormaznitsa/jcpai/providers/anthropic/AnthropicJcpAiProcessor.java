@@ -80,7 +80,7 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
         .ifPresent(builder::authToken);
 
     findBaseUrl(PROPERTY_ANTHROPIC_BASE_URL, context).ifPresent(x -> {
-      this.logDebug("detected provided base url: " + x);
+      this.logWarn("non-default API base url: " + x);
       builder.baseUrl(x);
     });
     findTimeoutMs(context)
