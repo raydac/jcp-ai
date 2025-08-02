@@ -24,6 +24,7 @@
         <module>jcp-ai-test-anthropics</module>
         <module>jcp-ai-test-openai</module>
         <module>jcp-ai-test-deepseek</module>
+        <module>jcp-ai-test-openrouter</module>
     </modules>
 
     <dependencies>
