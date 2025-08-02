@@ -106,7 +106,8 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
       final PreprocessingState state) {
     return Map.of(
         "distilled", this.isDistillationRequired(context),
-        "model", this.findModel(PROPERTY_GEMINI_MODEL, context, positionInfo)
+        "model", this.findModel(PROPERTY_GEMINI_MODEL, context, positionInfo),
+        "system", this.findParamInstructionSystem(context).orElse(DEFAULT_SYSTEM_INSTRUCTION)
     );
   }
 

@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.igormaznitsa</groupId>
         <artifactId>jcp-ai</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>jcp-ai-anthropic</artifactId>
@@ -124,7 +124,7 @@
         <dependency>
             <groupId>com.igormaznitsa</groupId>
             <artifactId>jcp-ai-commons</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
+            <version>1.0.1</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -137,7 +137,7 @@
         <dependency>
             <groupId>com.anthropic</groupId>
             <artifactId>anthropic-java</artifactId>
-            <version>2.2.0</version>
+            <version>${client.version.anthropic}</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

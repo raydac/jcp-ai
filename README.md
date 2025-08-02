@@ -2,15 +2,15 @@
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Java 17+](https://img.shields.io/badge/java-17%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 [![Maven 3.8+](https://img.shields.io/badge/maven-3.8%2b-green.svg)](https://maven.apache.org/)      
-[![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.0.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.0.0|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.0.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.0|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.0|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.0.1-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.0.1|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.0.1-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.1|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.1-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.1|jar)
 
 # Changelog
 
-## 1.0.1 (SNAPSHOT)
+## 1.0.1 (02-aug-2025)
 
-- refactor hint cache key handling to take distillation flag and model name into account
+- refactor hint cache key handling to take distillation flag, system text and model name into account
 - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.10.0`
 - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.2.0`
 - jcp-ai-openai uses as base library `com.openai:openai-java:2.20.1`
@@ -136,6 +136,10 @@ JCP-AI provides set of common parameters for all connectors:
 - __jcpai.prompt.max.tokens__ - limit number for output tokens for LLM process if client supports it
 - __jcpai.prompt.instruction.system__ - text to be sent as system instruction with prompt, if not defined then default
   one will be sent
+- __jcpai.prompt.distillate.response__ - boolean flat to make distillation of LLM response and remove parenthesis and
+  extract markdown section (default true)
+- __jcpai.prompt.cache.file.gc.threshold__ - threshold for deleting cached responses if they have not been used for a
+  certain number of builds (default 15)
 
 # How to build?
 

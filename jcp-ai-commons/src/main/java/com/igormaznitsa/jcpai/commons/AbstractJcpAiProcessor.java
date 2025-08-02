@@ -76,7 +76,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
       normalized += "\nADDITIONAL: " + additional.entrySet()
           .stream()
           .sorted(Map.Entry.comparingByKey())
-          .toList().stream().map(x -> x.getKey() + "->" + requireNonNullElse(x.getValue(), "[]"))
+          .map(x -> x.getKey() + "->" + requireNonNullElse(x.getValue(), "[]"))
           .collect(joining(";"));
     }
 

@@ -77,7 +77,7 @@
                                 <argument>--scan</argument>
                                 <argument>--full-stacktrace</argument>
                                 <argument>-Pjcpai_test_version=${jcpai.test.version}</argument>
-                                <argument>-Pjcp_test_version=${jcp.test.version}</argument>
+                                <argument>-Pjcp_test_version=${jcp.version}</argument>
                                 <argument>-Pgemini_ai_client=${client.version.gemini}</argument>
                             </arguments>
                         </configuration>

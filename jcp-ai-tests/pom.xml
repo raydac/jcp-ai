@@ -2,21 +2,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.igormaznitsa</groupId>
+    <parent>
+        <groupId>com.igormaznitsa</groupId>
+        <artifactId>jcp-ai</artifactId>
+        <version>1.0.1</version>
+    </parent>
+
     <artifactId>jcp-ai-tests</artifactId>
     <version>0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jcpai.test.version>1.0.1-SNAPSHOT</jcpai.test.version>
-        <jcp.test.version>7.2.1</jcp.test.version>
-        <junit.version>5.13.3</junit.version>
-        <maven.compiler.release>11</maven.compiler.release>
-
-        <client.version.gemini>1.10.0</client.version.gemini>
-        <client.version.openai>2.20.1</client.version.openai>
-        <client.version.anthropic>2.2.0</client.version.anthropic>
+        <jcpai.test.version>1.0.1</jcpai.test.version>
     </properties>
 
     <modules>
@@ -31,7 +29,7 @@
         <dependency>
             <groupId>com.igormaznitsa</groupId>
             <artifactId>jcp</artifactId>
-            <version>${jcp.test.version}</version>
+            <version>${jcp.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -113,7 +111,7 @@
                 <plugin>
                     <groupId>com.igormaznitsa</groupId>
                     <artifactId>jcp</artifactId>
-                    <version>${jcp.test.version}</version>
+                    <version>${jcp.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

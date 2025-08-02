@@ -67,7 +67,8 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
       final PreprocessingState state) {
     return Map.of(
         "distilled", this.isDistillationRequired(context),
-        "model", this.findModel(PROPERTY_ANTHROPIC_MODEL, context, positionInfo)
+        "model", this.findModel(PROPERTY_ANTHROPIC_MODEL, context, positionInfo),
+        "system", this.findParamInstructionSystem(context).orElse(DEFAULT_SYSTEM_INSTRUCTION)
     );
   }
 

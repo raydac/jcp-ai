@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.igormaznitsa</groupId>
         <artifactId>jcp-ai</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>jcp-ai-gemini</artifactId>
@@ -124,7 +124,7 @@
         <dependency>
             <groupId>com.igormaznitsa</groupId>
             <artifactId>jcp-ai-commons</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
+            <version>1.0.1</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -137,7 +137,7 @@
         <dependency>
             <groupId>com.google.genai</groupId>
             <artifactId>google-genai</artifactId>
-            <version>1.10.0</version>
+            <version>${client.version.gemini}</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
