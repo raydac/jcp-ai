@@ -1,5 +1,7 @@
 package com.igormaznitsa.jcpai.commons;
 
+import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
+
 public final class StringUtils {
 
   public static final String AI_PROMPT_PREFIX = "AI>";
@@ -59,5 +61,22 @@ public final class StringUtils {
       i++;
     }
     return text.substring(i);
+  }
+
+  /**
+   * Get position info in format file:line
+   *
+   * @param positionInfo the position info, can be null
+   * @param onlyName     if true then only file name will be in use, full absolute path otherwise
+   * @return empty string if position info is null or file name and line number otherwise
+   * @since 1.0.1
+   */
+  public static String asText(final FilePositionInfo positionInfo, final boolean onlyName) {
+    if (positionInfo == null) {
+      return "";
+    }
+    return
+        (onlyName ? positionInfo.getFile().getName() : positionInfo.getFile().getAbsolutePath()) +
+            ':' + positionInfo.getLineNumber();
   }
 }

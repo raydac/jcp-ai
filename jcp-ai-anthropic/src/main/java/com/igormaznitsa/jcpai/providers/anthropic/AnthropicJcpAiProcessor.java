@@ -13,6 +13,7 @@ import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
 import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import java.time.Duration;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
@@ -58,6 +59,18 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
     return "ANTHROPIC";
   }
 
+  @Override
+  protected Map<String, Object> getExtraPromptKeyValues(
+      final FileInfoContainer sourceFileContainer,
+      final FilePositionInfo positionInfo,
+      final PreprocessorContext context,
+      final PreprocessingState state) {
+    return Map.of(
+        "distilled", this.isDistillationRequired(context),
+        "model", this.findModel(PROPERTY_ANTHROPIC_MODEL, context, positionInfo)
+    );
+  }
+
   private AnthropicClient prepareAnthropicClient(final PreprocessorContext context) {
     var builder = AnthropicOkHttpClient.builder().fromEnv();
 
@@ -90,8 +103,7 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
     final long start = System.currentTimeMillis();
     final AnthropicClient client = this.prepareAnthropicClient(context);
     try {
-      final String model = findPreprocessorVar(PROPERTY_ANTHROPIC_MODEL, context).map(
-          Value::asString).orElse(null);
+      final String model = this.findModel(PROPERTY_ANTHROPIC_MODEL, context, positionInfo);
 
       final MessageCreateParams message = makeMessage(context, model, prompt);
       this.logDebug("Message create params: " + message);
@@ -113,7 +125,7 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
     this.logInfo(
         String.format("got response for the prompt at %s, spent %d ms, response %d char(s)",
             sources, spent, result.length()));
-    result = this.makeResponseDistillation(context, result);
+    result = this.makeDistillationIfAllowed(context, result);
 
     if (result.isBlank()) {
       throw new IllegalStateException(

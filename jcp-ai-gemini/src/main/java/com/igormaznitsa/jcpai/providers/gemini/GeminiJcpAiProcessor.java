@@ -13,6 +13,8 @@ import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
 import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
+import com.igormaznitsa.jcpai.commons.StringUtils;
+import java.util.Map;
 import java.util.Optional;
 
 public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
@@ -97,6 +99,18 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
   }
 
   @Override
+  protected Map<String, Object> getExtraPromptKeyValues(
+      final FileInfoContainer sourceFileContainer,
+      final FilePositionInfo positionInfo,
+      final PreprocessorContext context,
+      final PreprocessingState state) {
+    return Map.of(
+        "distilled", this.isDistillationRequired(context),
+        "model", this.findModel(PROPERTY_GEMINI_MODEL, context, positionInfo)
+    );
+  }
+
+  @Override
   public String processPrompt(
       final String prompt,
       final FileInfoContainer sourceFileContainer,
@@ -104,8 +118,7 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
       final PreprocessorContext context,
       final PreprocessingState state) {
 
-    final String sources = positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
-
+    final String sources = StringUtils.asText(positionInfo, true);
     final GenerateContentConfig generateContentConfig =
         findPreprocessorVar(PROPERTY_GEMINI_GENERATE_CONTENT_CONFIG_JSON, context)
             .map(x -> {
@@ -119,11 +132,7 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
     this.logDebug(String.format("prepared generate content config for %s: %s", sources,
         generateContentConfig.toJson()));
 
-    final String geminiModel = findPreprocessorVar(PROPERTY_GEMINI_MODEL, context)
-        .map(Value::asString)
-        .orElseThrow(() -> new IllegalStateException(
-            "Can't find defined Gemini model name through " + PROPERTY_GEMINI_MODEL + " at " +
-                sources));
+    final String geminiModel = findModel(PROPERTY_GEMINI_MODEL, context, positionInfo);
 
     logInfo(String.format("sending prompt from %s, model is %s, max tokens %s", sources,
         geminiModel,
@@ -157,7 +166,7 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
     logInfo(String.format("got response for the prompt at %s, spent %d ms, response %d char(s)",
         sources, spent, result.length()));
 
-    result = this.makeResponseDistillation(context, result);
+    result = this.makeDistillationIfAllowed(context, result);
 
     if (result.isBlank()) {
       throw new IllegalStateException(

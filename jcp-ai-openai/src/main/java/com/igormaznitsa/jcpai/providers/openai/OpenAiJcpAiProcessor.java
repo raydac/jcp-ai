@@ -6,11 +6,13 @@ import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
 import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
+import com.igormaznitsa.jcpai.commons.StringUtils;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import java.time.Duration;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
@@ -77,6 +79,18 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
   }
 
   @Override
+  protected Map<String, Object> getExtraPromptKeyValues(
+      final FileInfoContainer sourceFileContainer,
+      final FilePositionInfo positionInfo,
+      final PreprocessorContext context,
+      final PreprocessingState state) {
+    return Map.of(
+        "distilled", this.isDistillationRequired(context),
+        "model", this.findModel(PROPERTY_OPENAI_MODEL, context, positionInfo)
+    );
+  }
+
+  @Override
   public String processPrompt(
       final String prompt,
       final FileInfoContainer sourceFileContainer,
@@ -84,14 +98,13 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
       final PreprocessorContext context,
       final PreprocessingState state) {
 
-    final String sources = positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
+    final String sources = StringUtils.asText(positionInfo, true);
 
     String response;
     final long start = System.currentTimeMillis();
     final OpenAIClient client = this.prepareOpenAiClient(context);
     try {
-      final String model = findPreprocessorVar(PROPERTY_OPENAI_MODEL, context).map(
-          Value::asString).orElse(null);
+      final String model = this.findModel(PROPERTY_OPENAI_MODEL, context, positionInfo);
       final ChatCompletionCreateParams messageParams = this.makeMessage(context, model, prompt);
       this.logDebug("Message create params for " + sources + ": " + messageParams);
 
@@ -113,7 +126,7 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
         String.format("got response for the prompt at %s, spent %d ms, response %d char(s)",
             sources, spent, response.length()));
 
-    response = this.makeResponseDistillation(context, response);
+    response = this.makeDistillationIfAllowed(context, response);
 
     if (response.isBlank()) {
       throw new IllegalStateException(

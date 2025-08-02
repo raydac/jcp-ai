@@ -2,6 +2,7 @@ package com.igormaznitsa.jcpai.commons;
 
 import static com.igormaznitsa.jcpai.commons.StringUtils.AI_PROMPT_PREFIX;
 import static com.igormaznitsa.jcpai.commons.StringUtils.leftTrim;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.stream.Collectors.joining;
 
 import com.igormaznitsa.jcp.containers.FileInfoContainer;
@@ -67,8 +68,18 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
       new ConcurrentHashMap<>();
   private PreprocessorLogger logger;
 
-  private static String makeCachePromptKey(final List<String> prompt) {
-    final String normalized = String.join("\n", prompt);
+  private static String makeCachePromptKey(final List<String> prompt,
+                                           final Map<String, Object> additional) {
+    String normalized = String.join("\n", prompt);
+
+    if (!additional.isEmpty()) {
+      normalized += "\nADDITIONAL: " + additional.entrySet()
+          .stream()
+          .sorted(Map.Entry.comparingByKey())
+          .toList().stream().map(x -> x.getKey() + "->" + requireNonNullElse(x.getValue(), "[]"))
+          .collect(joining(";"));
+    }
+
     final byte[] promptBytes = normalized.getBytes(StandardCharsets.UTF_8);
     final byte[] md5 = MD5_DIGEST.digest(promptBytes);
     final byte[] sha512 = SHA512_DIGEST.digest(promptBytes);
@@ -393,6 +404,45 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
 
   }
 
+  /**
+   * Find model name provided by specified property.
+   *
+   * @param modelNameProperty the property contains model name
+   * @param context           the preprocessor context, must not be null
+   * @param positionInfo      the position info, must not be null
+   * @return the model name
+   * @throws IllegalStateException if there is no any model name in scope
+   * @since 1.0.1
+   */
+  protected String findModel(
+      final String modelNameProperty,
+      final PreprocessorContext context,
+      final FilePositionInfo positionInfo) {
+
+    final String sources = StringUtils.asText(positionInfo, true);
+
+    return findPreprocessorVar(modelNameProperty, context)
+        .map(Value::asString)
+        .orElseThrow(() -> new IllegalStateException(
+            "Can't find model by " + modelNameProperty + " at " +
+                sources));
+  }
+
+  /**
+   * Get extra values to make prompt key
+   *
+   * @param context the preprocessor context, must not be null
+   * @return extra values as map, must not be null but can be empty.
+   * @since 1.0.1
+   */
+  protected Map<String, Object> getExtraPromptKeyValues(
+      final FileInfoContainer sourceFileContainer,
+      final FilePositionInfo positionInfo,
+      final PreprocessorContext context,
+      final PreprocessingState state) {
+    return Map.of();
+  }
+
   @Override
   public final String processUncommentedText(
       final int recommendedIndent,
@@ -439,7 +489,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
           final String promptKey;
           String cachedResponse = null;
           if (cacheFilePair != null) {
-            promptKey = makeCachePromptKey(block.lines);
+            promptKey = makeCachePromptKey(block.lines,
+                this.getExtraPromptKeyValues(sourceFileContainer, positionInfo, context, state));
             cachedResponse = cacheFilePair.getKey().getCache().find(promptKey);
             cacheFilePair.getValue().add(promptKey);
             logDebug("registered use of prompt key for " + sources + " : " + promptKey);
@@ -514,6 +565,18 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
       PreprocessingState state);
 
   /**
+   * Get flag that response distillation is allowed.
+   *
+   * @param context the preprocessor context, must not be null
+   * @return true if required, false otherwise
+   * @since 1.0.1
+   */
+  protected boolean isDistillationRequired(final PreprocessorContext context) {
+    return findPreprocessorBooleanVariable(PROPERTY_JCPAI_DISTILLATE_RESPONSE, context).orElse(
+        true);
+  }
+
+  /**
    * Get the processor text id. It will be used as log prefix and in other operations requiring id of the processor.
    *
    * @return the processor name, must not be null
@@ -521,9 +584,17 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
    */
   public abstract String getProcessorTextId();
 
-  protected String makeResponseDistillation(final PreprocessorContext context,
-                                            final String response) {
-    if (findPreprocessorBooleanVariable(PROPERTY_JCPAI_DISTILLATE_RESPONSE, context).orElse(true)) {
+  /**
+   * Make distillation of response text if needed.
+   *
+   * @param context  the preprocessor context, must not be null
+   * @param response the response to be processed
+   * @return the distilled response or original one
+   * @since 1.0.1
+   */
+  protected String makeDistillationIfAllowed(final PreprocessorContext context,
+                                             final String response) {
+    if (this.isDistillationRequired(context)) {
       logInfo("distilling the response");
       return StringUtils.extractCodePart(response);
     } else {

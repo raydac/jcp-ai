@@ -1,4 +1,5 @@
- # 1.0.1-SNAPSHOT
+ # 1.0.1 (SNAPSHOT)
+   - refactor hint cache key handling to take distillation flag and model name into account
    - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.10.0`
    - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.2.0`
    - jcp-ai-openai uses as base library `com.openai:openai-java:2.20.1`
