@@ -168,7 +168,7 @@ buildscript {
   }
   dependencies {
     classpath "com.igormaznitsa:jcp:7.2.1"
-    classpath "com.igormaznitsa:jcp-ai-gemini:1.0.0"
+    classpath "com.igormaznitsa:jcp-ai-gemini:1.0.1"
     classpath "com.google.genai:google-genai:1.10.0"
   }
 }
@@ -261,12 +261,12 @@ Gemini AI as target LLM. The build section in the case should look like the snip
               <dependency>
                 <groupId>com.igormaznitsa</groupId>
                 <artifactId>jcp-ai-gemini</artifactId>
-                <version>1.0.0</version>
+                <version>1.0.1</version>
               </dependency>
               <dependency>
                 <groupId>com.google.genai</groupId>
                 <artifactId>google-genai</artifactId>
-                <version>1.9.0</version>
+                <version>1.10.0</version>
               </dependency>
             </dependencies>
         </plugin>
