@@ -22,9 +22,9 @@
 
 ## 1.0.0 (22-jul-2025)
 
-- added adapter jcp-ai-anthropic 1.0.0
-- added adapter jcp-ai-gemini 1.0.0
-- added adapter jcp-ai-openai 1.0.0
+- added adapter `com.igormaznitsa:jcp-ai-anthropic:1.0.0`
+- added adapter `com.igormaznitsa:jcp-ai-gemini:1.0.0`
+- added adapter `com.igormaznitsa:jcp-ai-openai:1.0.0`
 
 [Full changelog](changelog.txt)
 
