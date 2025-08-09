@@ -49,8 +49,11 @@ public final class JcpAiPromptCacheFile {
     if (this.cache.isChanged()) {
       final StringWriter writer = new StringWriter(16384);
       this.cache.write(writer, filter);
-      Files.writeString(this.path, writer.toString(), StandardCharsets.UTF_8,
-          StandardOpenOption.CREATE);
+      Files.writeString(this.path, writer.toString(),
+          StandardCharsets.UTF_8,
+          StandardOpenOption.CREATE,
+          StandardOpenOption.TRUNCATE_EXISTING,
+          StandardOpenOption.WRITE);
       return true;
     }
     return false;
