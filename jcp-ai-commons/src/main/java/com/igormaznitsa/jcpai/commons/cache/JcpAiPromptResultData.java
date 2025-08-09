@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.hisp.dhis.jsontree.Json;
@@ -30,9 +30,7 @@ public class JcpAiPromptResultData {
     this.records.clear();
     final JsonMixed mixed = JsonMixed.of(reader);
     if (mixed.isArray()) {
-      mixed.stream().map(JcpAiCacheRecord::new).forEach(x -> {
-        this.records.put(x.getKey(), x);
-      });
+      mixed.stream().map(JcpAiCacheRecord::new).forEach(x -> this.records.put(x.getKey(), x));
     }
     this.changed = !this.records.isEmpty();
   }
@@ -47,7 +45,6 @@ public class JcpAiPromptResultData {
     this.changed = true;
 
     final JcpAiCacheRecord newRecord = new JcpAiCacheRecord();
-    newRecord.setUuid(UUID.randomUUID());
     newRecord.setFileName(fileName);
     newRecord.setLine(line);
     newRecord.setInstant(Instant.now());
@@ -71,6 +68,7 @@ public class JcpAiPromptResultData {
   public synchronized void write(final Writer writer, final Predicate<JcpAiCacheRecord> filter)
       throws IOException {
     final JsonArray array = Json.array(x -> this.records.values().stream()
+        .sorted(Comparator.comparing(JcpAiCacheRecord::getKey))
         .filter(filter)
         .map(
             JcpAiCacheRecord::toJsonNode)
