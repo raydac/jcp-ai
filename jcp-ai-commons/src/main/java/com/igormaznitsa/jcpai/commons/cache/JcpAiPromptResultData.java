@@ -2,6 +2,9 @@ package com.igormaznitsa.jcpai.commons.cache;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -10,9 +13,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.hisp.dhis.jsontree.Json;
-import org.hisp.dhis.jsontree.JsonArray;
-import org.hisp.dhis.jsontree.JsonMixed;
 
 public class JcpAiPromptResultData {
 
@@ -28,9 +28,10 @@ public class JcpAiPromptResultData {
 
   public synchronized void read(final Reader reader) {
     this.records.clear();
-    final JsonMixed mixed = JsonMixed.of(reader);
-    if (mixed.isArray()) {
-      mixed.stream().map(JcpAiCacheRecord::new).forEach(x -> this.records.put(x.getKey(), x));
+    final JsonArray array = new Gson().fromJson(reader, JsonArray.class);
+    for (int i = 0; i < array.size(); i++) {
+      final JcpAiCacheRecord record = new JcpAiCacheRecord(array.get(i).getAsJsonObject());
+      this.records.put(record.getKey(), record);
     }
     this.changed = !this.records.isEmpty();
   }
@@ -67,13 +68,14 @@ public class JcpAiPromptResultData {
 
   public synchronized void write(final Writer writer, final Predicate<JcpAiCacheRecord> filter)
       throws IOException {
-    final JsonArray array = Json.array(x -> this.records.values().stream()
+    final JsonArray array = new JsonArray();
+    this.records.values().stream()
         .sorted(Comparator.comparing(JcpAiCacheRecord::getKey))
         .filter(filter)
         .map(
-            JcpAiCacheRecord::toJsonNode)
-        .forEach(x::addElement));
-    writer.write(array.toJson());
+            JcpAiCacheRecord::toJsonObject)
+        .forEach(array::add);
+    writer.append(new GsonBuilder().setPrettyPrinting().create().toJson(array));
     writer.flush();
   }
 

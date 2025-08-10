@@ -2,11 +2,8 @@ package com.igormaznitsa.jcpai.commons.cache;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.gson.JsonObject;
 import java.time.Instant;
-import org.hisp.dhis.jsontree.JsonBuilder;
-import org.hisp.dhis.jsontree.JsonNode;
-import org.hisp.dhis.jsontree.JsonObject;
-import org.hisp.dhis.jsontree.JsonValue;
 
 public class JcpAiCacheRecord {
   private Instant instant;
@@ -16,41 +13,28 @@ public class JcpAiCacheRecord {
   private int line;
   private long sinceUse;
 
-  private static final JsonBuilder.PrettyPrint PRETTY_JSON =
-      new JsonBuilder.PrettyPrint(
-          2,
-          0,
-          true,
-          true,
-          false);
-
   public JcpAiCacheRecord() {
 
   }
 
-  public JcpAiCacheRecord(final JsonValue jsonObject) {
-    if (jsonObject.isObject()) {
-      final JsonObject value = jsonObject.asObject();
-      this.instant = Instant.parse(value.getString("instant").string());
-      this.key = value.getString("key").string();
-      this.result = value.getString("result").string();
-      this.fileName = value.getString("fileName").string();
-      this.line = value.getNumber("line").intValue();
-      this.sinceUse = value.has("sinceUse") ? value.getNumber("sinceUse").intValue() : 0;
-    } else {
-      throw new IllegalArgumentException("Expected JSON object: " + jsonObject);
-    }
+  public JcpAiCacheRecord(final JsonObject jsonObject) {
+    this.instant = Instant.parse(jsonObject.get("instant").getAsString());
+    this.key = jsonObject.get("key").getAsString();
+    this.result = jsonObject.get("result").getAsString();
+    this.fileName = jsonObject.get("fileName").getAsString();
+    this.line = jsonObject.get("line").getAsInt();
+    this.sinceUse = jsonObject.has("sinceUse") ? jsonObject.get("sinceUse").getAsLong() : 0L;
   }
 
-  public JsonNode toJsonNode() {
-    return JsonBuilder.createObject(PRETTY_JSON, x ->
-        x.addString("instant", this.instant.toString())
-            .addString("key", this.key)
-            .addString("fileName", this.fileName)
-            .addNumber("line", this.line)
-            .addString("result", this.result)
-            .addNumber("sinceUse", this.sinceUse)
-    );
+  public JsonObject toJsonObject() {
+    final JsonObject result = new JsonObject();
+    result.addProperty("instant", this.instant.toString());
+    result.addProperty("key", this.key);
+    result.addProperty("fileName", this.fileName);
+    result.addProperty("line", this.line);
+    result.addProperty("result", this.result);
+    result.addProperty("sinceUse", this.sinceUse);
+    return result;
   }
 
   public long getSinceUse() {
