@@ -70,7 +70,8 @@
                                     <artifact>*:*</artifact>
                                     <excludes>
                                         <exclude>META-INF/versions/**</exclude>
-                                        <exclude>META-INF/maven/com.google.gson/**</exclude>
+                                        <exclude>META-INF/maven/com.google.code.gson/**</exclude>
+                                        <exclude>META-INF/proguard/**</exclude>
                                         <exclude>META-INF/LICENSE.txt</exclude>
                                         <exclude>META-INF/NOTICE.txt</exclude>
                                         <exclude>META-INF/MANIFEST.MF</exclude>
