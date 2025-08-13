@@ -1,5 +1,6 @@
 # 1.0.3 (SNAPSHOT)
    - jcp-ai-openai uses as base library `com.openai:openai-java:3.0.3`
+   - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.5.1`
 
 # 1.0.2 (13-aug-2025)
    - fixed truncation for prompt cache files
