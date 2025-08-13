@@ -1,6 +1,6 @@
 # 1.0.2 (SNAPSHOT)
    - fixed truncation for prompt cache files
-   - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.4.0`
+   - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.5.0`
    - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.11.0`
    - jcp-ai-openai uses as base library `com.openai:openai-java:3.0.2`
 

@@ -20,7 +20,7 @@
 
         <client.version.gemini>1.11.0</client.version.gemini>
         <client.version.openai>3.0.2</client.version.openai>
-        <client.version.anthropic>2.4.0</client.version.anthropic>
+        <client.version.anthropic>2.5.0</client.version.anthropic>
     </properties>
 
     <modules>
