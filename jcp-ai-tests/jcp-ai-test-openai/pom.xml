@@ -67,7 +67,7 @@
                     <dependency>
                         <groupId>com.openai</groupId>
                         <artifactId>openai-java</artifactId>
-                        <version>2.20.1</version>
+                        <version>${client.version.openai}</version>
                     </dependency>
                 </dependencies>
             </plugin>

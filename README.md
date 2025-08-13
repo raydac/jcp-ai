@@ -2,11 +2,18 @@
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Java 17+](https://img.shields.io/badge/java-17%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 [![Maven 3.8+](https://img.shields.io/badge/maven-3.8%2b-green.svg)](https://maven.apache.org/)      
-[![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.0.1-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.0.1|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.0.1-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.1|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.1-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.1|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.0.2|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.2|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.2|jar)
 
 # Changelog
+
+## 1.0.2 (13-aug-2025)
+
+- fixed truncation for prompt cache files
+- jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.5.0`
+- jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.11.0`
+- jcp-ai-openai uses as base library `com.openai:openai-java:3.0.2`
 
 ## 1.0.1 (02-aug-2025)
 
@@ -19,12 +26,6 @@
   default it is turned on
 - improved prompt cache file processing, added threshold to remove old responses and variable
   `jcpai.prompt.cache.file.gc.threshold` to define unuse level
-
-## 1.0.0 (22-jul-2025)
-
-- added adapter `com.igormaznitsa:jcp-ai-anthropic:1.0.0`
-- added adapter `com.igormaznitsa:jcp-ai-gemini:1.0.0`
-- added adapter `com.igormaznitsa:jcp-ai-openai:1.0.0`
 
 [Full changelog](changelog.txt)
 
@@ -168,8 +169,8 @@ buildscript {
   }
   dependencies {
     classpath "com.igormaznitsa:jcp:7.2.1"
-    classpath "com.igormaznitsa:jcp-ai-gemini:1.0.1"
-    classpath "com.google.genai:google-genai:1.10.0"
+    classpath "com.igormaznitsa:jcp-ai-gemini:1.0.2"
+    classpath "com.google.genai:google-genai:1.11.0"
   }
 }
 
@@ -261,12 +262,12 @@ Gemini AI as target LLM. The build section in the case should look like the snip
               <dependency>
                 <groupId>com.igormaznitsa</groupId>
                 <artifactId>jcp-ai-gemini</artifactId>
-                <version>1.0.1</version>
+                <version>1.0.2</version>
               </dependency>
               <dependency>
                 <groupId>com.google.genai</groupId>
                 <artifactId>google-genai</artifactId>
-                <version>1.10.0</version>
+                <version>1.11.0</version>
               </dependency>
             </dependencies>
         </plugin>
