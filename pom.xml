@@ -18,7 +18,7 @@
         <junit.version>5.13.4</junit.version>
         <jcp.version>7.2.1</jcp.version>
 
-        <client.version.gemini>1.11.0</client.version.gemini>
+        <client.version.gemini>1.12.0</client.version.gemini>
         <client.version.openai>3.0.3</client.version.openai>
         <client.version.anthropic>2.5.1</client.version.anthropic>
     </properties>
