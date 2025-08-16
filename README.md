@@ -4,7 +4,8 @@
 [![Maven 3.8+](https://img.shields.io/badge/maven-3.8%2b-green.svg)](https://maven.apache.org/)      
 [![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.0.2|jar)
 [![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.2|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.2|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.2|jar)   
+[![Arthur's acres sanctuary donation](assets/arthur_sanctuary_banner.png)](https://www.arthursacresanimalsanctuary.org/donate)
 
 # Changelog
 
@@ -42,8 +43,6 @@ inserted directly into the program code (with minor normalizations).
 
 Since the preprocessor can work with Maven, Gradle, and Ant, the ability to use LLMs automatically becomes available
 for these build tools as well.
-
-[![Arthur's acres sanctuary donation](assets/arthur_sanctuary_banner.png)](https://www.arthursacresanimalsanctuary.org/donate)
 
 # How it works?
 
