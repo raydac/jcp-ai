@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
 
   public static final String DEFAULT_SYSTEM_INSTRUCTION =
-      "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code. You write production-quality, idiomatic, maintainable code using best practices (including SOLID, DRY, KISS, and YAGNI). Your code is well-structured, efficient, modular, and extensible. You include only minimal but meaningful comments where necessary, and always prioritize clarity, correctness, and real-world applicability. Respond only with the complete source code. Do not include explanations, markup, formatting symbols, or sections - just the raw code output as if writing directly into a source file. You are acting strictly as a code generator.";
+      "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code. You write production-quality, idiomatic, maintainable code using best practices (including SOLID, DRY, KISS, and YAGNI). Your code is well-structured, efficient, modular, and extensible. You include only minimal but meaningful comments where necessary, and always prioritize clarity, correctness, and real-world applicability. Respond only with the complete source code. Do not include explanations, markup, formatting symbols, or sections - just the raw code output as if writing directly into a source file. You are acting strictly as a code generator. Generate the source code exactly as requested. Do not include any explanations, comments, markdown formatting, or code block delimiters. Do not add any text before or after the code. The output should be plain code, ready to be directly copied or injected into a source file.Ensure the code is syntactically correct, complete, and self-contained if applicable.";
 
   public static final String PROPERTY_JCPAI_PROMPT_CACHE = "jcpai.prompt.cache.file";
   public static final String PROPERTY_JCPAI_PROMPT_CACHE_GC_THRESHOLD =
@@ -596,7 +596,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
                                              final String response) {
     if (this.isDistillationRequired(context)) {
       logInfo("distilling the response");
-      return StringUtils.extractCodePart(response);
+      return StringUtils.extractCodePart(response, context.getEol());
     } else {
       logDebug("distilling is turned off");
       return response;
