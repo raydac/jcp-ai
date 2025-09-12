@@ -1,7 +1,7 @@
 # 1.0.3 (SNAPSHOT)
-   - jcp-ai-openai uses as base library `com.openai:openai-java:3.5.0`
-   - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.6.0`
-   - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.15.0`
+   - jcp-ai-openai uses as base library `com.openai:openai-java:3.5.2`
+   - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.7.0`
+   - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.16.0`
 
 # 1.0.2 (13-aug-2025)
    - fixed truncation for prompt cache files
