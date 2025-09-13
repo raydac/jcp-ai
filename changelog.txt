@@ -1,4 +1,5 @@
-# 1.0.3 (SNAPSHOT)
+# 1.0.3 (13-sep-2025)
+   - improved code extraction from model answer
    - jcp-ai-openai uses as base library `com.openai:openai-java:3.5.2`
    - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.7.0`
    - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.16.0`

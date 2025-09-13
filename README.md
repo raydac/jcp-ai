@@ -9,24 +9,19 @@
 
 # Changelog
 
+## 1.0.3 (13-sep-2025)
+
+- improved code extraction from model answer
+- jcp-ai-openai uses as base library `com.openai:openai-java:3.5.2`
+- jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.7.0`
+- jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.16.0`
+
 ## 1.0.2 (13-aug-2025)
 
 - fixed truncation for prompt cache files
 - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.5.0`
 - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.11.0`
 - jcp-ai-openai uses as base library `com.openai:openai-java:3.0.2`
-
-## 1.0.1 (02-aug-2025)
-
-- refactor hint cache key handling to take distillation flag, system text and model name into account
-- jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.10.0`
-- jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.2.0`
-- jcp-ai-openai uses as base library `com.openai:openai-java:2.20.1`
-- added test cases for DeepSeek and OpenRouter
-- added boolean flag `jcpai.prompt.distillate.response` to disable postprocessing of LLM response to extract code , by
-  default it is turned on
-- improved prompt cache file processing, added threshold to remove old responses and variable
-  `jcpai.prompt.cache.file.gc.threshold` to define unuse level
 
 [Full changelog](changelog.txt)
 
@@ -168,8 +163,8 @@ buildscript {
   }
   dependencies {
     classpath "com.igormaznitsa:jcp:7.2.1"
-    classpath "com.igormaznitsa:jcp-ai-gemini:1.0.2"
-    classpath "com.google.genai:google-genai:1.11.0"
+      classpath "com.igormaznitsa:jcp-ai-gemini:1.0.3"
+      classpath "com.google.genai:google-genai:1.16.0"
   }
 }
 
@@ -261,12 +256,12 @@ Gemini AI as target LLM. The build section in the case should look like the snip
               <dependency>
                 <groupId>com.igormaznitsa</groupId>
                 <artifactId>jcp-ai-gemini</artifactId>
-                <version>1.0.2</version>
+                  <version>1.0.3</version>
               </dependency>
               <dependency>
                 <groupId>com.google.genai</groupId>
                 <artifactId>google-genai</artifactId>
-                <version>1.11.0</version>
+                  <version>1.16.0</version>
               </dependency>
             </dependencies>
         </plugin>
