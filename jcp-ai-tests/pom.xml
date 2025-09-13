@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.igormaznitsa</groupId>
         <artifactId>jcp-ai</artifactId>
-        <version>1.0.3</version>
+        <version>1.0.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>jcp-ai-tests</artifactId>
@@ -14,7 +14,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jcpai.test.version>1.0.3</jcpai.test.version>
+        <jcpai.test.version>1.0.4-SNAPSHOT</jcpai.test.version>
     </properties>
 
     <modules>
