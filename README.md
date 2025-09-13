@@ -2,9 +2,9 @@
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Java 17+](https://img.shields.io/badge/java-17%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 [![Maven 3.8+](https://img.shields.io/badge/maven-3.8%2b-green.svg)](https://maven.apache.org/)      
-[![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.0.2|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.2|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.2-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.2|jar)   
+[![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.0.3-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.0.3|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.0.3-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.3|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.3-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.3|jar)   
 [![Arthur's acres sanctuary donation](assets/arthur_sanctuary_banner.png)](https://www.arthursacresanimalsanctuary.org/donate)
 
 # Changelog
