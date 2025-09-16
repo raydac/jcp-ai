@@ -1,5 +1,5 @@
 # 1.0.4 (SNAPSHOT)
-   -
+   - jcp-ai-openai uses as base library `com.openai:openai-java:3.5.3`
 
 # 1.0.3 (13-sep-2025)
    - improved code extraction from model answer
