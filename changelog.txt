@@ -1,6 +1,6 @@
 # 1.0.4 (SNAPSHOT)
    - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.17.0`
-   - jcp-ai-openai uses as base library `com.openai:openai-java:3.6.0`
+   - jcp-ai-openai uses as base library `com.openai:openai-java:3.6.1`
 
 # 1.0.3 (13-sep-2025)
    - improved code extraction from model answer
