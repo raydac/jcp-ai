@@ -12,7 +12,9 @@ import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
 import com.igormaznitsa.jcp.expression.ValueType;
+import com.igormaznitsa.jcp.extension.PreprocessorExtension;
 import com.igormaznitsa.jcp.logger.PreprocessorLogger;
+import com.igormaznitsa.jcp.utils.PreprocessorUtils;
 import com.igormaznitsa.jcpai.commons.cache.JcpAiPromptCacheFile;
 import java.io.File;
 import java.io.IOException;
@@ -26,13 +28,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 /**
  * Abstract processor to prepare answer from a prompt.
  *
  * @since 1.0.0
  */
-public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
+public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
+    PreprocessorExtension {
+
+  public static final String FUNCTION_CALL_AI_1 = "call_ai";
 
   public static final String DEFAULT_SYSTEM_INSTRUCTION =
       "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code. You write production-quality, idiomatic, maintainable code using best practices (including SOLID, DRY, KISS, and YAGNI). Your code is well-structured, efficient, modular, and extensible. You include only minimal but meaningful comments where necessary, and always prioritize clarity, correctness, and real-world applicability. Respond only with the complete source code. Do not include explanations, markup, formatting symbols, or sections - just the raw code output as if writing directly into a source file. You are acting strictly as a code generator. Generate the source code exactly as requested. Do not include any explanations, comments, markdown formatting, or code block delimiters. Do not add any text before or after the code. The output should be plain code, ready to be directly copied or injected into a source file.Ensure the code is syntactically correct, complete, and self-contained if applicable.";
@@ -626,6 +632,81 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor {
 
     String asString(final String eol) {
       return String.join(eol, this.lines);
+    }
+  }
+
+  @Override
+  public boolean hasAction(final int i) {
+    return false;
+  }
+
+  @Override
+  public boolean hasUserFunction(final String name, final int arity) {
+    if (FUNCTION_CALL_AI_1.equals(name)) {
+      return arity == ANY_ARITY || arity == 1;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean processAction(final PreprocessorContext preprocessorContext,
+                               final Value[] values) {
+    throw new UnsupportedOperationException("Action processing is not implemented");
+  }
+
+  @Override
+  public Value processUserFunction(final PreprocessorContext context,
+                                   final String name,
+                                   final Value[] args) {
+    if (name.equals(FUNCTION_CALL_AI_1)) {
+      if (args.length != 1) {
+        throw new IllegalArgumentException("Unexpected number of arguments: " + args.length);
+      }
+
+      final String prompt = args[0].asString();
+
+      final FileInfoContainer container =
+          PreprocessorUtils.findLastActiveFileContainer(context).orElse(null);
+      if (container == null) {
+        throw context.makeException("Can't find file info container", null);
+      }
+      final FilePositionInfo filePositionInfo =
+          context.getPreprocessingState().findLastPositionInfoInStack().orElse(null);
+      if (filePositionInfo == null) {
+        throw context.makeException("Can't find file position info", null);
+      }
+
+      final long start = System.currentTimeMillis();
+      try {
+        context.getPreprocessorLogger()
+            .info("processing $" + FUNCTION_CALL_AI_1 + " at " + filePositionInfo);
+        context.getPreprocessorLogger().debug("Prompt:\n" + prompt);
+
+        final String response = Stream.of(this.processPrompt(prompt,
+            container,
+            filePositionInfo,
+            context,
+            context.getPreprocessingState()
+        ).split("\\R")).collect(joining(context.getEol()));
+        context.getPreprocessorLogger().debug("Response:\n" + response);
+
+        return Value.valueOf(response);
+      } finally {
+        context.getPreprocessorLogger()
+            .info("Elapsed AI call time " + (System.currentTimeMillis() - start) + "ms");
+      }
+    } else {
+      throw new IllegalStateException("Call for unknown function: " + name);
+    }
+  }
+
+  @Override
+  public int getUserFunctionArity(final String name) {
+    if (FUNCTION_CALL_AI_1.equals(name)) {
+      return 1;
+    } else {
+      return ANY_ARITY;
     }
   }
 }
