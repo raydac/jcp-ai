@@ -1,1 +1,1 @@
-com.igormaznitsa.jcpai.providers.openai.OpenAiJcpAiProcessor
+com.igormaznitsa.jcpai.providers.openai.OpenAiJcpAiProcessorDelegateService

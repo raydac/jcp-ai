@@ -1,1 +1,1 @@
-com.igormaznitsa.jcpai.providers.anthropic.AnthropicJcpAiProcessor
+com.igormaznitsa.jcpai.providers.anthropic.AnthropicJcpAiProcessorDelegateService

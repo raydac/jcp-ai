@@ -1,1 +1,1 @@
-com.igormaznitsa.jcpai.providers.gemini.GeminiJcpAiProcessor
+com.igormaznitsa.jcpai.providers.gemini.GeminiJcpAiProcessorDelegateService

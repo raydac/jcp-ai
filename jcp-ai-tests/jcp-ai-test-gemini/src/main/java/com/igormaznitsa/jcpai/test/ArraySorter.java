@@ -25,4 +25,6 @@ public class ArraySorter {
     throw new UnsupportedOperationException("not generated");
   }
   //#+
+
+  //$ /*$$call_ai("generate a public static void method hello world for Java 11, ensure the function is not wrapped by any class and only the method in response, it will be inserted into existing sources")$*/
 }

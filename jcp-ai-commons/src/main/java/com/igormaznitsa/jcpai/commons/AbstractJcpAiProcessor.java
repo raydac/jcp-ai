@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
@@ -61,12 +62,20 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   public static final MessageDigest SHA512_DIGEST;
   public static final MessageDigest MD5_DIGEST;
 
+  protected final AtomicBoolean started = new AtomicBoolean();
+
   static {
     try {
       SHA512_DIGEST = MessageDigest.getInstance("SHA-512");
       MD5_DIGEST = MessageDigest.getInstance("MD5");
     } catch (Exception ex) {
       throw new Error("Can't find or instantiate a digest provider", ex);
+    }
+  }
+
+  protected void assertStarted() {
+    if (!this.started.get()) {
+      throw new IllegalStateException("Called but processor not started");
     }
   }
 
@@ -266,61 +275,65 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   public final void onContextStopped(
       final PreprocessorContext context,
       final Throwable error) {
-    if (error == null) {
-      logInfo(
-          "stopping processor, cached prompt map contains " + this.promptFiles.size() + " file(s)");
-    } else {
-      logError("stopping processor with error: " + error.getMessage());
-    }
+    if (this.started.compareAndSet(true, false)) {
+      if (error == null) {
+        logInfo(
+            "stopping processor, cached prompt map contains " + this.promptFiles.size() +
+                " file(s)");
+      } else {
+        logError("stopping processor with error: " + error.getMessage());
+      }
 
-    final long gcThreshold =
-        findPreprocessorLongVariable(PROPERTY_JCPAI_PROMPT_CACHE_GC_THRESHOLD, context).orElse(
-            DEFAULT_CACHE_GC_THRESHOLD);
-    if (gcThreshold <= 0) {
-      this.logWarn("GC threshold disabled for prompt file caches");
-    } else {
-      this.logInfo("GC threshold is " + gcThreshold + " for prompt file caches");
-    }
+      final long gcThreshold =
+          findPreprocessorLongVariable(PROPERTY_JCPAI_PROMPT_CACHE_GC_THRESHOLD, context).orElse(
+              DEFAULT_CACHE_GC_THRESHOLD);
+      if (gcThreshold <= 0) {
+        this.logWarn("GC threshold disabled for prompt file caches");
+      } else {
+        this.logInfo("GC threshold is " + gcThreshold + " for prompt file caches");
+      }
 
-    this.promptFiles.values()
-        .forEach(x -> {
-          try {
-            final JcpAiPromptCacheFile cacheContainer = x.getKey();
-            final Set<String> detectedPrompts = x.getValue();
+      this.promptFiles.values()
+          .forEach(x -> {
+            try {
+              final JcpAiPromptCacheFile cacheContainer = x.getKey();
+              final Set<String> detectedPrompts = x.getValue();
 
-            final Set<String> removedPrompts = new HashSet<>();
-            cacheContainer.stream().forEach(y -> {
-              if (detectedPrompts.contains(y.getKey())) {
-                if (y.getSinceUse() != 0) {
-                  cacheContainer.markChanged();
-                  y.setSinceUse(0);
-                }
-              } else {
-                if (gcThreshold > 0) {
-                  final long newGc = y.getSinceUse() + 1L;
-                  y.setSinceUse(newGc);
-                  cacheContainer.markChanged();
-                  if (newGc > gcThreshold) {
-                    removedPrompts.add(y.getKey());
+              final Set<String> removedPrompts = new HashSet<>();
+              cacheContainer.stream().forEach(y -> {
+                if (detectedPrompts.contains(y.getKey())) {
+                  if (y.getSinceUse() != 0) {
+                    cacheContainer.markChanged();
+                    y.setSinceUse(0);
+                  }
+                } else {
+                  if (gcThreshold > 0) {
+                    final long newGc = y.getSinceUse() + 1L;
+                    y.setSinceUse(newGc);
+                    cacheContainer.markChanged();
+                    if (newGc > gcThreshold) {
+                      removedPrompts.add(y.getKey());
+                    }
                   }
                 }
+              });
+              this.logInfo(
+                  "Detected " + removedPrompts.size() + " prompt(s) marked for GC in cache file " +
+                      x.getKey().getPath());
+              if (cacheContainer.flush(y -> !removedPrompts.contains(y.getKey()))) {
+                logInfo("Written prompt cache file: " + x.getKey().getPath());
               }
-            });
-            this.logInfo(
-                "Detected " + removedPrompts.size() + " prompt(s) marked for GC in cache file " +
-                    x.getKey().getPath());
-            if (cacheContainer.flush(y -> !removedPrompts.contains(y.getKey()))) {
-              logInfo("Written prompt cache file: " + x.getKey().getPath());
+            } catch (IOException ex) {
+              logError(
+                  "Can't flush prompt cache file " + x.getKey().getPath() + " : " +
+                      ex.getMessage());
             }
-          } catch (IOException ex) {
-            logError(
-                "Can't flush prompt cache file " + x.getKey().getPath() + " : " + ex.getMessage());
-          }
-        });
-    this.promptFiles.clear();
+          });
+      this.promptFiles.clear();
 
-    this.onProcessorStopped(context, error);
-    this.logger = null;
+      this.onProcessorStopped(context, error);
+      this.logger = null;
+    }
   }
 
   public Optional<Float> findParamTemperature(final PreprocessorContext context) {
@@ -357,11 +370,18 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
   @Override
   public final void onContextStarted(PreprocessorContext context) {
-    this.logger = context.getPreprocessorLogger();
-    this.promptFiles.clear();
+    if (this.started.compareAndSet(false, true)) {
+      try {
+        this.logger = context.getPreprocessorLogger();
+        this.promptFiles.clear();
 
-    logInfo("init processor");
-    this.onProcessorStarted(context);
+        logInfo("init processor");
+        this.onProcessorStarted(context);
+      } catch (RuntimeException ex) {
+        this.started.set(false);
+        throw ex;
+      }
+    }
   }
 
   protected void logInfo(String text) {
@@ -458,6 +478,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
       final PreprocessorContext context,
       final PreprocessingState state
   ) {
+    this.assertStarted();
+
     logDebug("Incoming potential prompt: " + uncommentedText);
 
     final String[] lines = uncommentedText.split("\\R");
@@ -537,6 +559,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
       final FilePositionInfo filePositionInfo,
       final PreprocessorContext preprocessorContext,
       final PreprocessingState preprocessingState) {
+    this.assertStarted();
     final Value modelName =
         findPreprocessorVar(PROPERTY_JCPAI_ONLY_PROCESSOR, preprocessorContext).orElse(null);
     if (modelName == null) {
@@ -637,11 +660,13 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
   @Override
   public boolean hasAction(final int i) {
+    this.assertStarted();
     return false;
   }
 
   @Override
   public boolean hasUserFunction(final String name, final int arity) {
+    this.assertStarted();
     if (FUNCTION_CALL_AI_1.equals(name)) {
       return arity == ANY_ARITY || arity == 1;
     } else {
@@ -659,6 +684,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   public Value processUserFunction(final PreprocessorContext context,
                                    final String name,
                                    final Value[] args) {
+    this.assertStarted();
     if (name.equals(FUNCTION_CALL_AI_1)) {
       if (args.length != 1) {
         throw new IllegalArgumentException("Unexpected number of arguments: " + args.length);
@@ -679,9 +705,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
       final long start = System.currentTimeMillis();
       try {
-        context.getPreprocessorLogger()
-            .info("processing $" + FUNCTION_CALL_AI_1 + " at " + filePositionInfo);
-        context.getPreprocessorLogger().debug("Prompt:\n" + prompt);
+        this.logInfo("processing $" + FUNCTION_CALL_AI_1 + " at " + filePositionInfo);
+        this.logDebug("Prompt:\n" + prompt);
 
         final String response = Stream.of(this.processPrompt(prompt,
             container,
@@ -689,12 +714,11 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
             context,
             context.getPreprocessingState()
         ).split("\\R")).collect(joining(context.getEol()));
-        context.getPreprocessorLogger().debug("Response:\n" + response);
+        this.logDebug("Response:\n" + response);
 
         return Value.valueOf(response);
       } finally {
-        context.getPreprocessorLogger()
-            .info("Elapsed AI call time " + (System.currentTimeMillis() - start) + "ms");
+        this.logInfo("Elapsed AI call time " + (System.currentTimeMillis() - start) + "ms");
       }
     } else {
       throw new IllegalStateException("Call for unknown function: " + name);
@@ -703,6 +727,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
   @Override
   public int getUserFunctionArity(final String name) {
+    this.assertStarted();
     if (FUNCTION_CALL_AI_1.equals(name)) {
       return 1;
     } else {
