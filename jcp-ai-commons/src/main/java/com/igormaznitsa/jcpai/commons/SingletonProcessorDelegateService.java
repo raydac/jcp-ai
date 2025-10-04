@@ -1,12 +1,11 @@
 package com.igormaznitsa.jcpai.commons;
 
-import com.igormaznitsa.jcp.containers.FileInfoContainer;
 import com.igormaznitsa.jcp.context.CommentTextProcessor;
-import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
-import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
 import com.igormaznitsa.jcp.extension.PreprocessorExtension;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -24,15 +23,9 @@ public abstract class SingletonProcessorDelegateService implements CommentTextPr
   protected abstract AbstractJcpAiProcessor findInstance();
 
   @Override
-  public String processUncommentedText(final int i,
-                                       final String s,
-                                       final FileInfoContainer fileInfoContainer,
-                                       final FilePositionInfo filePositionInfo,
-                                       final PreprocessorContext preprocessorContext,
-                                       final PreprocessingState preprocessingState) {
+  public String processUncommentedText(PreprocessorContext preprocessorContext, int i, String s) {
     return this.delegateExecution(
-        t -> t.processUncommentedText(i, s, fileInfoContainer, filePositionInfo,
-            preprocessorContext, preprocessingState));
+        t -> t.processUncommentedText(preprocessorContext, i, s));
   }
 
   private <R> R delegateExecution(Function<AbstractJcpAiProcessor, R> supplier) {
@@ -49,25 +42,25 @@ public abstract class SingletonProcessorDelegateService implements CommentTextPr
   }
 
   @Override
-  public boolean hasUserFunction(final String s, final int i) {
-    return this.delegateExecution(t -> t.hasUserFunction(s, i));
+  public boolean hasUserFunction(final String name, final Set<Integer> arity) {
+    return this.delegateExecution(t -> t.hasUserFunction(name, arity));
   }
 
   @Override
   public boolean processAction(final PreprocessorContext preprocessorContext,
-                               final Value[] values) {
+                               final List<Value> values) {
     return this.delegateExecution(t -> t.processAction(preprocessorContext, values));
   }
 
   @Override
   public Value processUserFunction(final PreprocessorContext preprocessorContext,
                                    final String s,
-                                   final Value[] values) {
+                                   final List<Value> values) {
     return this.delegateExecution(t -> t.processUserFunction(preprocessorContext, s, values));
   }
 
   @Override
-  public int getUserFunctionArity(final String s) {
+  public Set<Integer> getUserFunctionArity(final String s) {
     return this.delegateExecution(t -> t.getUserFunctionArity(s));
   }
 

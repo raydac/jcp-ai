@@ -1,10 +1,9 @@
 package com.igormaznitsa.jcpai.providers.openai;
 
-import com.igormaznitsa.jcp.containers.FileInfoContainer;
-import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
+import com.igormaznitsa.jcp.utils.PreprocessorUtils;
 import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import com.igormaznitsa.jcpai.commons.StringUtils;
 import com.openai.client.OpenAIClient;
@@ -79,26 +78,18 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
   }
 
   @Override
-  protected Map<String, Object> getExtraPromptKeyValues(
-      final FileInfoContainer sourceFileContainer,
-      final FilePositionInfo positionInfo,
-      final PreprocessorContext context,
-      final PreprocessingState state) {
+  protected Map<String, Object> getExtraPromptKeyValues(final PreprocessorContext context) {
     return Map.of(
         "distilled", this.isDistillationRequired(context),
-        "model", this.findModel(PROPERTY_OPENAI_MODEL, context, positionInfo),
+        "model", this.findModel(PROPERTY_OPENAI_MODEL, context,
+            PreprocessorUtils.extractFilePositionInfo(context)),
         "system", this.findParamInstructionSystem(context).orElse(DEFAULT_SYSTEM_INSTRUCTION)
     );
   }
 
   @Override
-  public String processPrompt(
-      final String prompt,
-      final FileInfoContainer sourceFileContainer,
-      final FilePositionInfo positionInfo,
-      final PreprocessorContext context,
-      final PreprocessingState state) {
-
+  public String processPrompt(final PreprocessorContext context, final String prompt) {
+    final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
     final String sources = StringUtils.asText(positionInfo, true);
 
     String response;

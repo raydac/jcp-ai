@@ -6,11 +6,10 @@ import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.TextBlock;
-import com.igormaznitsa.jcp.containers.FileInfoContainer;
-import com.igormaznitsa.jcp.context.PreprocessingState;
 import com.igormaznitsa.jcp.context.PreprocessorContext;
 import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
+import com.igormaznitsa.jcp.utils.PreprocessorUtils;
 import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
 import java.time.Duration;
 import java.util.Map;
@@ -61,10 +60,8 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
 
   @Override
   protected Map<String, Object> getExtraPromptKeyValues(
-      final FileInfoContainer sourceFileContainer,
-      final FilePositionInfo positionInfo,
-      final PreprocessorContext context,
-      final PreprocessingState state) {
+      final PreprocessorContext context) {
+    final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
     return Map.of(
         "distilled", this.isDistillationRequired(context),
         "model", this.findModel(PROPERTY_ANTHROPIC_MODEL, context, positionInfo),
@@ -92,12 +89,9 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
 
   @Override
   public String processPrompt(
-      final String prompt,
-      final FileInfoContainer sourceFileContainer,
-      final FilePositionInfo positionInfo,
       final PreprocessorContext context,
-      final PreprocessingState state) {
-
+      final String prompt) {
+    final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
     final String sources = positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
 
     final Message response;

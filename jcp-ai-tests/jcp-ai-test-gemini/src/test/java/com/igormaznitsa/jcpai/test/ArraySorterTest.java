@@ -1,12 +1,18 @@
 package com.igormaznitsa.jcpai.test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import org.junit.jupiter.api.Test;
 
 class ArraySorterTest {
+
+  @Test
+  void testAdd666() {
+    assertEquals(12, ArraySorter.add666(5, 7));
+  }
 
   @Test
   void testFastSort_null() {
