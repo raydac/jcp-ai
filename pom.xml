@@ -18,8 +18,8 @@
         <junit.version>5.13.4</junit.version>
         <jcp.version>7.3.0-SNAPSHOT</jcp.version>
 
-        <client.version.gemini>1.19.0</client.version.gemini>
-        <client.version.openai>4.0.0</client.version.openai>
+        <client.version.gemini>1.20.0</client.version.gemini>
+        <client.version.openai>4.1.0</client.version.openai>
         <client.version.anthropic>2.8.1</client.version.anthropic>
     </properties>
 
