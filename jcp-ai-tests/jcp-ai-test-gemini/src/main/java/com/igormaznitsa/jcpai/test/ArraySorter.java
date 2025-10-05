@@ -26,9 +26,9 @@ public class ArraySorter {
   }
   //#+
 
-  //$ /*$$call_ai("generate a public static void method hello world for Java 11, ensure the function is not wrapped by any class and only the method in response, it will be inserted into existing sources")$*/
+  //$ /*$$llm_call("generate a public static void method hello world for Java 11, ensure the function is not wrapped by any class and only the method in response, it will be inserted into existing sources")$*/
 
-  //$ /*$$call_ai(false, "generate empty body Java11 method with signature public static int add666(int a,int b), it must be prepared for injecting into code and must not have any wrapped class or comments, as result must be returned sum")$*/
+  //$ /*$$llm_call(false, "generate empty body Java11 method with signature public static int add666(int a,int b), it must be prepared for injecting into code and must not have any wrapped class or comments, as result must be returned sum")$*/
   //#-
   public static int add666(int a, int b) {
     throw new UnsupportedOperationException("not implemented");

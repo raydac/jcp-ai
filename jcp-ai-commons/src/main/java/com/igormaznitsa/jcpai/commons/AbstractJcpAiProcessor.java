@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     PreprocessorExtension {
 
-  public static final String FUNCTION_LLM_CALL = "llm_call";
+  public static final String FUNCTION_AI_CALL = "ai_call";
 
   public static final String DEFAULT_SYSTEM_INSTRUCTION =
       "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code. You write production-quality, idiomatic, maintainable code using best practices (including SOLID, DRY, KISS, and YAGNI). Your code is well-structured, efficient, modular, and extensible. You include only minimal but meaningful comments where necessary, and always prioritize clarity, correctness, and real-world applicability. Respond only with the complete source code. Do not include explanations, markup, formatting symbols, or sections - just the raw code output as if writing directly into a source file. You are acting strictly as a code generator. Generate the source code exactly as requested. Do not include any explanations, comments, markdown formatting, or code block delimiters. Do not add any text before or after the code. The output should be plain code, ready to be directly copied or injected into a source file.Ensure the code is syntactically correct, complete, and self-contained if applicable.";
@@ -647,7 +647,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     this.assertStarted();
 
     return switch (name) {
-      case FUNCTION_LLM_CALL -> arity.isEmpty() || arity.contains(1) || arity.contains(2);
+      case FUNCTION_AI_CALL -> arity.isEmpty() || arity.contains(1) || arity.contains(2);
       default -> false;
     };
   }
@@ -689,7 +689,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
                                    final List<Value> args) {
     this.assertStarted();
     return switch (name) {
-      case FUNCTION_LLM_CALL -> {
+      case FUNCTION_AI_CALL -> {
         if (args.isEmpty() || args.size() > 2) {
           throw new IllegalArgumentException(
               "Unexpected number of arguments, expected only either 1 or 2 arguments: " +
@@ -714,7 +714,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   @Override
   public Set<Integer> getUserFunctionArity(final String name) {
     this.assertStarted();
-    if (FUNCTION_LLM_CALL.equals(name)) {
+    if (FUNCTION_AI_CALL.equals(name)) {
       return ARITY_1_2;
     } else {
       return ARITY_ANY;
