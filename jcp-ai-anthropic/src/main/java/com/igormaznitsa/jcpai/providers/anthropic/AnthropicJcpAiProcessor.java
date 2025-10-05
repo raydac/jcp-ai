@@ -11,7 +11,9 @@ import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
 import com.igormaznitsa.jcp.utils.PreprocessorUtils;
 import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
+import com.igormaznitsa.jcpai.commons.ContentRecord;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -29,7 +31,12 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
   private MessageCreateParams makeMessage(
       final PreprocessorContext context,
       final String model,
-      final String prompt) {
+      final List<ContentRecord> records) {
+
+    if (records.isEmpty()) {
+      throw new IllegalArgumentException("No provided records for request");
+    }
+
     var builder = MessageCreateParams.builder();
 
     this.findParamTemperature(context)
@@ -37,12 +44,33 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
     this.findParamTopP(context).ifPresent(builder::topP);
     this.findParamTopK(context).map(Float::longValue).ifPresent(builder::topK);
 
-    this.findParamInstructionSystem(context)
-        .ifPresentOrElse(builder::system, () -> builder.system(DEFAULT_SYSTEM_INSTRUCTION));
+    if (records.stream().noneMatch(x -> x.getRole().isModel())) {
+      this.findParamInstructionSystem(context)
+          .ifPresentOrElse(builder::system, () -> builder.system(DEFAULT_SYSTEM_INSTRUCTION));
+    }
+
     this.findParamMaxTokens(context)
         .ifPresentOrElse(builder::maxTokens, () -> builder.maxTokens(4096));
 
-    builder.addUserMessage(prompt);
+    records.forEach(x -> {
+      switch (x.getRole()) {
+        case DEVELOPER:
+        case USER: {
+          builder.addUserMessage(x.getText());
+        }
+        break;
+        case SYSTEM: {
+          builder.system(x.getText());
+        }
+        break;
+        case ASSISTANT: {
+          builder.addAssistantMessage(x.getText());
+        }
+        break;
+        default:
+          throw new IllegalArgumentException("Detected unsupported role: " + x.getRole());
+      }
+    });
 
     if (model != null) {
       builder.model(model);
@@ -90,7 +118,7 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
   @Override
   public String processPrompt(
       final PreprocessorContext context,
-      final String prompt) {
+      final List<ContentRecord> contents) {
     final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
     final String sources = positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
 
@@ -100,12 +128,12 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
     try {
       final String model = this.findModel(PROPERTY_ANTHROPIC_MODEL, context, positionInfo);
 
-      final MessageCreateParams message = makeMessage(context, model, prompt);
+      final MessageCreateParams message = makeMessage(context, model, contents);
       this.logDebug("Message create params: " + message);
       logInfo(String.format("sending prompt from %s, model is %s, max tokens %d", sources,
           message.model().asString(), message.maxTokens()));
       response =
-          client.messages().create(makeMessage(context, model, prompt));
+          client.messages().create(makeMessage(context, model, contents));
 
     } finally {
       client.close();

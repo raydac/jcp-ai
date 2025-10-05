@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     PreprocessorExtension {
 
-  public static final String FUNCTION_CALL_AI = "call_ai";
+  public static final String FUNCTION_LLM_CALL = "llm_call";
 
   public static final String DEFAULT_SYSTEM_INSTRUCTION =
       "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code. You write production-quality, idiomatic, maintainable code using best practices (including SOLID, DRY, KISS, and YAGNI). Your code is well-structured, efficient, modular, and extensible. You include only minimal but meaningful comments where necessary, and always prioritize clarity, correctness, and real-world applicability. Respond only with the complete source code. Do not include explanations, markup, formatting symbols, or sections - just the raw code output as if writing directly into a source file. You are acting strictly as a code generator. Generate the source code exactly as requested. Do not include any explanations, comments, markdown formatting, or code block delimiters. Do not add any text before or after the code. The output should be plain code, ready to be directly copied or injected into a source file.Ensure the code is syntactically correct, complete, and self-contained if applicable.";
@@ -62,8 +62,6 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   public static final MessageDigest SHA512_DIGEST;
   public static final MessageDigest MD5_DIGEST;
 
-  protected final AtomicBoolean started = new AtomicBoolean();
-
   static {
     try {
       SHA512_DIGEST = MessageDigest.getInstance("SHA-512");
@@ -73,12 +71,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     }
   }
 
-  protected void assertStarted() {
-    if (!this.started.get()) {
-      throw new IllegalStateException("Called but processor not started");
-    }
-  }
-
+  protected final AtomicBoolean started = new AtomicBoolean();
   private final Map<File, Map.Entry<JcpAiPromptCacheFile, Set<String>>> promptFiles =
       new ConcurrentHashMap<>();
   private PreprocessorLogger logger;
@@ -271,6 +264,12 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
       throw new SecurityException(
           "Detected attempt to get access or created a prompt cache file outside of the project, check your code: "
               + file.getAbsolutePath());
+    }
+  }
+
+  protected void assertStarted() {
+    if (!this.started.get()) {
+      throw new IllegalStateException("Called but processor not started");
     }
   }
 
@@ -521,7 +520,9 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
           if (cachedResponse == null) {
             final List<String> responseLines =
-                List.of(this.processPrompt(context, block.asString("\n")).split("\\R"));
+                List.of(this.processPrompt(context,
+                        List.of(ContentRecord.of(ContentRole.USER, block.asString("\n"))))
+                    .split("\\R"));
             if (promptKey != null) {
               logInfo("caching result for " + sources);
               cacheFilePair.getKey().getCache()
@@ -587,14 +588,14 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   /**
    * Process prompt and generate text to replace the prompt in sources.
    *
-   * @param prompt  the prompt text, must not be null
-   * @param context the current preprocessor context, must not be null
+   * @param context  the current preprocessor context, must not be null
+   * @param contents list of content to provide during request, must not be null
    * @return the generated response as single line or multi-line text, must not be null
    * @since 1.1.0
    */
   public abstract String processPrompt(
       PreprocessorContext context,
-      String prompt);
+      List<ContentRecord> contents);
 
   /**
    * Get flag that response distillation is allowed.
@@ -635,6 +636,91 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     }
   }
 
+  @Override
+  public boolean hasAction(final int i) {
+    this.assertStarted();
+    return false;
+  }
+
+  @Override
+  public boolean hasUserFunction(final String name, final Set<Integer> arity) {
+    this.assertStarted();
+
+    return switch (name) {
+      case FUNCTION_LLM_CALL -> arity.isEmpty() || arity.contains(1) || arity.contains(2);
+      default -> false;
+    };
+  }
+
+  @Override
+  public boolean processAction(final PreprocessorContext preprocessorContext,
+                               final List<Value> values) {
+    throw new UnsupportedOperationException("Action processing is not implemented");
+  }
+
+  protected Value processFunctionLlmCall(
+      final PreprocessorContext context,
+      final boolean cacheAllowed,
+      final String prompt) {
+    final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
+
+    logDebug(String.format("Incoming potential prompt from function (%s): %s",
+        (cacheAllowed ? "cache allowed" : "no cache"), prompt));
+
+    if (prompt.isBlank()) {
+      throw context.makeException("Empty prompt is not allowed", null);
+    }
+
+    final List<String> lines = Arrays.stream(prompt.split("\\R")).toList();
+    final Map.Entry<JcpAiPromptCacheFile, Set<String>> cacheFilePair =
+        cacheAllowed ? this.findCacheFilePair(context) : null;
+
+    final String result =
+        this.makeRequest(context, positionInfo, List.of(new JcpAiPrompt(lines, positionInfo)), "",
+            cacheFilePair);
+
+    return Value.valueOf(result);
+
+  }
+
+  @Override
+  public Value processUserFunction(final PreprocessorContext context,
+                                   final String name,
+                                   final List<Value> args) {
+    this.assertStarted();
+    return switch (name) {
+      case FUNCTION_LLM_CALL -> {
+        if (args.isEmpty() || args.size() > 2) {
+          throw new IllegalArgumentException(
+              "Unexpected number of arguments, expected only either 1 or 2 arguments: " +
+                  args.size());
+        }
+
+        final String prompt;
+        final boolean cacheAllowed;
+        if (args.size() > 1) {
+          cacheAllowed = args.get(0).toBoolean();
+          prompt = args.get(1).asString();
+        } else {
+          prompt = args.get(0).asString();
+          cacheAllowed = true;
+        }
+        yield this.processFunctionLlmCall(context, cacheAllowed, prompt);
+      }
+      default -> throw new IllegalArgumentException("Call for unknown function: " + name);
+    };
+  }
+
+  @Override
+  public Set<Integer> getUserFunctionArity(final String name) {
+    this.assertStarted();
+    if (FUNCTION_LLM_CALL.equals(name)) {
+      return ARITY_1_2;
+    } else {
+      return ARITY_ANY;
+    }
+  }
+
   private static final class JustTextBlock extends TextBlock {
     JustTextBlock(final List<String> text, final FilePositionInfo positionInfo) {
       super(text, positionInfo);
@@ -661,78 +747,4 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     }
   }
 
-  @Override
-  public boolean hasAction(final int i) {
-    this.assertStarted();
-    return false;
-  }
-
-  @Override
-  public boolean hasUserFunction(final String name, final Set<Integer> arity) {
-    this.assertStarted();
-    if (FUNCTION_CALL_AI.equals(name)) {
-      return arity.isEmpty() || arity.contains(1) || arity.contains(2);
-    } else {
-      return false;
-    }
-  }
-
-  @Override
-  public boolean processAction(final PreprocessorContext preprocessorContext,
-                               final List<Value> values) {
-    throw new UnsupportedOperationException("Action processing is not implemented");
-  }
-
-  @Override
-  public Value processUserFunction(final PreprocessorContext context,
-                                   final String name,
-                                   final List<Value> args) {
-    this.assertStarted();
-    if (name.equals(FUNCTION_CALL_AI)) {
-      if (args.isEmpty() || args.size() > 2) {
-        throw new IllegalArgumentException(
-            "Unexpected number of arguments, expected only either 1 or 2 arguments: " +
-                args.size());
-      }
-
-      final String prompt;
-      final boolean allowCache;
-      if (args.size() > 1) {
-        allowCache = args.get(0).toBoolean();
-        prompt = args.get(1).asString();
-      } else {
-        prompt = args.get(0).asString();
-        allowCache = true;
-      }
-
-      final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
-      logDebug(String.format("Incoming potential prompt from function (%s): %s",
-          (allowCache ? "cache allowed" : "no cache"), prompt));
-
-      if (prompt.isBlank()) {
-        throw context.makeException("Empty prompt is not allowed", null);
-      }
-
-      final List<String> lines = Arrays.stream(prompt.split("\\R")).toList();
-      final Map.Entry<JcpAiPromptCacheFile, Set<String>> cacheFilePair =
-          allowCache ? this.findCacheFilePair(context) : null;
-
-      final String result =
-          this.makeRequest(context, positionInfo, List.of(new JcpAiPrompt(lines, positionInfo)), "",
-              cacheFilePair);
-      return Value.valueOf(result);
-    } else {
-      throw new IllegalStateException("Call for unknown function: " + name);
-    }
-  }
-
-  @Override
-  public Set<Integer> getUserFunctionArity(final String name) {
-    this.assertStarted();
-    if (FUNCTION_CALL_AI.equals(name)) {
-      return ARITY_1_2;
-    } else {
-      return ARITY_ANY;
-    }
-  }
 }

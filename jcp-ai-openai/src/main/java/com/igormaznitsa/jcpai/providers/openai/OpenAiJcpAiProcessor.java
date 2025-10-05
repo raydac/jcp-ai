@@ -5,12 +5,14 @@ import com.igormaznitsa.jcp.exceptions.FilePositionInfo;
 import com.igormaznitsa.jcp.expression.Value;
 import com.igormaznitsa.jcp.utils.PreprocessorUtils;
 import com.igormaznitsa.jcpai.commons.AbstractJcpAiProcessor;
+import com.igormaznitsa.jcpai.commons.ContentRecord;
 import com.igormaznitsa.jcpai.commons.StringUtils;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -30,18 +32,30 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
   private ChatCompletionCreateParams makeMessage(
       final PreprocessorContext context,
       final String model,
-      final String prompt) {
+      final List<ContentRecord> contentRecords) {
     var builder = ChatCompletionCreateParams.builder()
-        .addUserMessage(prompt)
         .n(1);
+
+    contentRecords.forEach(x -> {
+      switch (x.getRole()) {
+        case ASSISTANT -> builder.addAssistantMessage(x.getText());
+        case USER -> builder.addUserMessage(x.getText());
+        case DEVELOPER -> builder.addDeveloperMessage(x.getText());
+        case SYSTEM -> builder.addSystemMessage(x.getText());
+        default -> throw new IllegalArgumentException("Unexpected role type: " + x.getText());
+      }
+    });
 
     this.findParamTemperature(context).ifPresent(builder::temperature);
     this.findParamSeed(context).ifPresent(builder::seed);
     this.findParamTopP(context).ifPresent(builder::topP);
     this.findParamMaxTokens(context).ifPresent(builder::maxCompletionTokens);
 
-    findParamInstructionSystem(context).ifPresentOrElse(builder::addSystemMessage,
-        () -> builder.addSystemMessage(DEFAULT_SYSTEM_INSTRUCTION));
+    if (contentRecords.stream().noneMatch(x -> x.getRole().isModel())) {
+      findParamInstructionSystem(context).ifPresentOrElse(builder::addSystemMessage,
+          () -> builder.addSystemMessage(DEFAULT_SYSTEM_INSTRUCTION));
+    }
+
     if (model != null) {
       builder.model(model);
     } else {
@@ -88,7 +102,10 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
   }
 
   @Override
-  public String processPrompt(final PreprocessorContext context, final String prompt) {
+  public String processPrompt(
+      final PreprocessorContext context,
+      final List<ContentRecord> contents
+  ) {
     final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
     final String sources = StringUtils.asText(positionInfo, true);
 
@@ -97,7 +114,7 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
     final OpenAIClient client = this.prepareOpenAiClient(context);
     try {
       final String model = this.findModel(PROPERTY_OPENAI_MODEL, context, positionInfo);
-      final ChatCompletionCreateParams messageParams = this.makeMessage(context, model, prompt);
+      final ChatCompletionCreateParams messageParams = this.makeMessage(context, model, contents);
       this.logDebug("Message create params for " + sources + ": " + messageParams);
 
       this.logInfo(String.format("sending prompt from %s to model %s, max tokens %s",
