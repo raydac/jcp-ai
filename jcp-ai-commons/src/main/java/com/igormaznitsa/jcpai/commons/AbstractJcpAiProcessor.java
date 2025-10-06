@@ -40,6 +40,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     PreprocessorExtension {
 
   public static final String FUNCTION_AI_CALL = "ai_call";
+  public static final String FUNCTION_AI_CHAIN = "ai_chain";
 
   public static final String DEFAULT_SYSTEM_INSTRUCTION =
       "You are a world-class software engineer with decades of experience in software architecture, algorithms, and clean code. You write production-quality, idiomatic, maintainable code using best practices (including SOLID, DRY, KISS, and YAGNI). Your code is well-structured, efficient, modular, and extensible. You include only minimal but meaningful comments where necessary, and always prioritize clarity, correctness, and real-world applicability. Respond only with the complete source code. Do not include explanations, markup, formatting symbols, or sections - just the raw code output as if writing directly into a source file. You are acting strictly as a code generator. Generate the source code exactly as requested. Do not include any explanations, comments, markdown formatting, or code block delimiters. Do not add any text before or after the code. The output should be plain code, ready to be directly copied or injected into a source file.Ensure the code is syntactically correct, complete, and self-contained if applicable.";
@@ -61,6 +62,8 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   public static final long DEFAULT_CACHE_GC_THRESHOLD = 15;
   public static final MessageDigest SHA512_DIGEST;
   public static final MessageDigest MD5_DIGEST;
+
+  protected String indentLog = "";
 
   static {
     try {
@@ -95,6 +98,10 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     System.arraycopy(md5, 0, aggregated, 0, md5.length);
     System.arraycopy(sha512, 0, aggregated, md5.length, sha512.length);
     return Base64.getEncoder().encodeToString(aggregated);
+  }
+
+  protected void setIndentLog(final String indent) {
+    this.indentLog = requireNonNullElse(indent, "");
   }
 
   private static List<TextBlock> splitToTextBlocks(final FilePositionInfo startLinePosition,
@@ -388,25 +395,25 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
   protected void logInfo(String text) {
     if (this.logger != null) {
-      this.logger.info(this.getProcessorTextId() + ": " + text);
+      this.logger.info(this.getProcessorTextId() + ": " + this.indentLog + text);
     }
   }
 
   protected void logDebug(String text) {
     if (this.logger != null) {
-      this.logger.debug(this.getProcessorTextId() + ": " + text);
+      this.logger.debug(this.getProcessorTextId() + ": " + this.indentLog + text);
     }
   }
 
   protected void logError(String text) {
     if (this.logger != null) {
-      this.logger.error(this.getProcessorTextId() + ": " + text);
+      this.logger.error(this.getProcessorTextId() + ": " + this.indentLog + text);
     }
   }
 
   protected void logWarn(String text) {
     if (this.logger != null) {
-      this.logger.warning(this.getProcessorTextId() + ": " + text);
+      this.logger.warning(this.getProcessorTextId() + ": " + this.indentLog + text);
     }
   }
 
@@ -499,8 +506,6 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
     final long start = System.currentTimeMillis();
     try {
-      final String sources =
-          positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
       final List<String> resultLines = new ArrayList<>();
       for (final TextBlock block : detectedTextBlocks) {
         if (block instanceof JustTextBlock) {
@@ -515,16 +520,17 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
                 this.getExtraPromptKeyValues(context));
             cachedResponse = cacheFilePair.getKey().getCache().find(promptKey);
             cacheFilePair.getValue().add(promptKey);
-            logDebug("registered use of prompt key for " + sources + " : " + promptKey);
+            logDebug("registered use of prompt key for " + positionInfo.toShortString() + " : " +
+                promptKey);
           }
 
           if (cachedResponse == null) {
             final List<String> responseLines =
                 List.of(this.processPrompt(context,
-                        List.of(ContentRecord.of(ContentRole.USER, block.asString("\n"))))
-                    .split("\\R"));
+                    List.of(),
+                    block.asString("\n")).split("\\R"));
             if (promptKey != null) {
-              logInfo("caching result for " + sources);
+              logInfo("caching result for " + positionInfo.toShortString());
               cacheFilePair.getKey().getCache()
                   .put(promptKey, block.positionInfo.getFile().getName(),
                       block.positionInfo.getLineNumber(), String.join("\n", responseLines));
@@ -532,7 +538,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
             resultLines.addAll(responseLines);
           } else {
             resultLines.addAll(List.of(cachedResponse.split("\\R")));
-            this.logInfo("found cached prompt response for " + sources
+            this.logInfo("found cached prompt response for " + positionInfo.toShortString()
                 + " in cache file " + cacheFilePair.getKey().getPath().getFileName());
           }
         }
@@ -588,14 +594,16 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   /**
    * Process prompt and generate text to replace the prompt in sources.
    *
-   * @param context  the current preprocessor context, must not be null
-   * @param contents list of content to provide during request, must not be null
+   * @param context the current preprocessor context, must not be null
+   * @param history list of content to provide as history during request, must not be null
    * @return the generated response as single line or multi-line text, must not be null
    * @since 1.1.0
    */
   public abstract String processPrompt(
       PreprocessorContext context,
-      List<ContentRecord> contents);
+      List<ContentRecord> history,
+      String prompt
+  );
 
   /**
    * Get flag that response distillation is allowed.
@@ -648,6 +656,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
     return switch (name) {
       case FUNCTION_AI_CALL -> arity.isEmpty() || arity.contains(1) || arity.contains(2);
+      case FUNCTION_AI_CHAIN -> true;
       default -> false;
     };
   }
@@ -658,7 +667,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
     throw new UnsupportedOperationException("Action processing is not implemented");
   }
 
-  protected Value processFunctionLlmCall(
+  private Value processAiCall(
       final PreprocessorContext context,
       final boolean cacheAllowed,
       final String prompt) {
@@ -683,12 +692,59 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
 
   }
 
+  private Value processAiChainCall(
+      final PreprocessorContext context,
+      final List<String> args) {
+
+    final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
+
+    final List<ContentRecord> history = new ArrayList<>();
+    history.add(ContentRecord.of(ContentRole.SYSTEM,
+        findParamInstructionSystem(context).orElse(DEFAULT_SYSTEM_INSTRUCTION)));
+
+    String lastResponse = null;
+
+    this.logInfo("Started AI chain: " + positionInfo.toShortString());
+    this.setIndentLog("...");
+    try {
+      for (final String prompt : args) {
+        logDebug(
+            String.format("AI chain processing (history %d items): %s", history.size(), prompt));
+        lastResponse = this.processPrompt(context, history, prompt);
+        logDebug(
+            String.format("AI chain processing (history %d items) response: %s", history.size(),
+                lastResponse));
+        history.add(ContentRecord.of(ContentRole.USER, prompt));
+        history.add(ContentRecord.of(ContentRole.ASSISTANT, lastResponse));
+      }
+      logDebug(String.format("AI chain processing (history %d items) completed with result: %s",
+          history.size(), lastResponse));
+
+      if (lastResponse == null) {
+        throw context.makeException("Can't find result response for the AI request chain", null);
+      }
+    } finally {
+      this.setIndentLog("");
+      this.logInfo("Completed AI chain: " + positionInfo.toShortString());
+    }
+
+    return Value.valueOf(Arrays.stream(lastResponse.split("\\R")).toList().stream()
+        .collect(joining(context.getEol())));
+  }
+
   @Override
   public Value processUserFunction(final PreprocessorContext context,
                                    final String name,
                                    final List<Value> args) {
     this.assertStarted();
     return switch (name) {
+      case FUNCTION_AI_CHAIN -> {
+        if (args.isEmpty()) {
+          throw new IllegalArgumentException("Empty chain is not allowed");
+        }
+        yield this.processAiChainCall(context,
+            args.stream().map(Value::toString).toList());
+      }
       case FUNCTION_AI_CALL -> {
         if (args.isEmpty() || args.size() > 2) {
           throw new IllegalArgumentException(
@@ -705,7 +761,7 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
           prompt = args.get(0).asString();
           cacheAllowed = true;
         }
-        yield this.processFunctionLlmCall(context, cacheAllowed, prompt);
+        yield this.processAiCall(context, cacheAllowed, prompt);
       }
       default -> throw new IllegalArgumentException("Call for unknown function: " + name);
     };
@@ -714,11 +770,11 @@ public abstract class AbstractJcpAiProcessor implements CommentTextProcessor,
   @Override
   public Set<Integer> getUserFunctionArity(final String name) {
     this.assertStarted();
-    if (FUNCTION_AI_CALL.equals(name)) {
-      return ARITY_1_2;
-    } else {
-      return ARITY_ANY;
-    }
+    return switch (name) {
+      case FUNCTION_AI_CALL -> ARITY_1_2;
+      case FUNCTION_AI_CHAIN -> ARITY_ANY;
+      default -> ARITY_ANY;
+    };
   }
 
   private static final class JustTextBlock extends TextBlock {

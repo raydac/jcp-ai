@@ -37,7 +37,7 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
 
   private GenerateContentConfig makeDefaultGenerateContentConfig(
       final PreprocessorContext context,
-      final List<ContentRecord> records) {
+      final List<ContentRecord> history) {
     var builder = GenerateContentConfig.builder()
         .candidateCount(1)
         .responseModalities("TEXT");
@@ -48,26 +48,25 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
     this.findParamSeed(context).map(Long::intValue).ifPresent(builder::seed);
     this.findParamMaxTokens(context).map(Long::intValue).ifPresent(builder::maxOutputTokens);
 
-    final List<ContentRecord> modelRecords = records.stream()
-        .filter(x -> x.getRole().isModel())
-        .toList();
-
-    if (modelRecords.isEmpty()) {
-      this.findParamInstructionSystem(context).ifPresentOrElse(x ->
-          builder.systemInstruction(Content.builder()
-              .role("model")
-              .parts(Part.builder().text(x).build())
-              .build()), () ->
-          builder.systemInstruction(Content.builder()
-              .role("model")
-              .parts(Part.builder().text(DEFAULT_SYSTEM_INSTRUCTION).build())
-              .build())
-      );
-    } else {
-      modelRecords.forEach(x -> builder.systemInstruction(Content.builder()
+    if (history.isEmpty()) {
+      builder.systemInstruction(Content.builder()
           .role("model")
-          .parts(Part.builder().text(x.getText()).build())
-          .build()));
+          .parts(Part.builder().text(DEFAULT_SYSTEM_INSTRUCTION).build())
+          .build());
+    } else {
+      history.forEach(x -> {
+        if (x.getRole().isModel()) {
+          builder.systemInstruction(Content.builder()
+              .role("model")
+              .parts(Part.builder().text(x.getText()).build())
+              .build());
+        } else {
+          builder.systemInstruction(Content.builder()
+              .role("user")
+              .parts(Part.builder().text(x.getText()).build())
+              .build());
+        }
+      });
     }
     return builder.build();
   }
@@ -125,11 +124,11 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
   @Override
   public String processPrompt(
       final PreprocessorContext context,
-      final List<ContentRecord> contents
-  ) {
+      final List<ContentRecord> history,
+      final String prompt) {
     final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
     final String sources = StringUtils.asText(positionInfo, true);
-    final GenerateContentConfig generateContentConfig =
+    final GenerateContentConfig generatedContentConfig =
         findPreprocessorVar(PROPERTY_GEMINI_GENERATE_CONTENT_CONFIG_JSON, context)
             .map(x -> {
               final String json = x.asString();
@@ -137,40 +136,25 @@ public class GeminiJcpAiProcessor extends AbstractJcpAiProcessor {
                   "detected generate content config json for " + positionInfo + ": " + json);
               return GenerateContentConfig.fromJson(json);
             })
-            .orElseGet(() -> this.makeDefaultGenerateContentConfig(context, contents));
+            .orElseGet(() -> this.makeDefaultGenerateContentConfig(context, history));
 
     this.logDebug(String.format("prepared generate content config for %s: %s", sources,
-        generateContentConfig.toJson()));
+        generatedContentConfig.toJson()));
 
     final String geminiModel = findModel(PROPERTY_GEMINI_MODEL, context, positionInfo);
 
     logInfo(String.format("sending prompt from %s, model is %s, max tokens %s", sources,
         geminiModel,
-        generateContentConfig.maxOutputTokens().map(Object::toString).orElse("DEFAULT")));
+        generatedContentConfig.maxOutputTokens().map(Object::toString).orElse("DEFAULT")));
 
     final GenerateContentResponse response;
     final long start = System.currentTimeMillis();
     try (final Client client = this.prepareGeminiClient(context)) {
-
-      final List<Content> userContent = contents.stream()
-          .filter(x -> !x.getRole().isModel())
-          .map(
-              x -> {
-                final Part textPart = Part.builder()
-                    .text(x.getText()).build();
-
-                return Content.builder()
-                    .role("user")
-                    .parts(textPart)
-                    .build();
-              }
-          ).toList();
-
       response =
           client.models.generateContent(
               geminiModel,
-              userContent,
-              generateContentConfig);
+              Content.builder().role("user").parts(Part.fromText(prompt)).build(),
+              generatedContentConfig);
     }
     final long spent = System.currentTimeMillis() - start;
 

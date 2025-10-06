@@ -1,10 +1,13 @@
 package com.igormaznitsa.jcpai.test;
 
+import static java.lang.reflect.Modifier.isStatic;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 
 class ArraySorterTest {
@@ -40,5 +43,18 @@ class ArraySorterTest {
         ArraySorter.fastSort(new int[] {1, 10, -12, 44, 56, 123, 33, 1, 34, -6}, true));
     assertArrayEquals(new int[] {123, 56, 44, 34, 33, 10, 1, 1, -6, -12},
         ArraySorter.fastSort(new int[] {-6, 34, 1, 33, 123, 56, 44, -12, 10, 1}, false));
+  }
+
+  @Test
+  void testReverseString() throws Exception {
+    Method reverseStringMethod = null;
+    for (final Method m : ArraySorter.class.getDeclaredMethods()) {
+      if (isStatic(m.getModifiers()) && m.getName().startsWith("autoai_")) {
+        reverseStringMethod = m;
+        break;
+      }
+    }
+    assertNotNull(reverseStringMethod, "Can't find generated reverse string method");
+    assertEquals("9876543210", reverseStringMethod.invoke(null, "0123456789"));
   }
 }

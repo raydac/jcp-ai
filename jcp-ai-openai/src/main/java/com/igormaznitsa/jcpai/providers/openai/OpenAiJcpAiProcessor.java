@@ -32,29 +32,32 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
   private ChatCompletionCreateParams makeMessage(
       final PreprocessorContext context,
       final String model,
-      final List<ContentRecord> contentRecords) {
+      final List<ContentRecord> history,
+      final String prompt) {
     var builder = ChatCompletionCreateParams.builder()
         .n(1);
 
-    contentRecords.forEach(x -> {
-      switch (x.getRole()) {
-        case ASSISTANT -> builder.addAssistantMessage(x.getText());
-        case USER -> builder.addUserMessage(x.getText());
-        case DEVELOPER -> builder.addDeveloperMessage(x.getText());
-        case SYSTEM -> builder.addSystemMessage(x.getText());
-        default -> throw new IllegalArgumentException("Unexpected role type: " + x.getText());
-      }
-    });
+    if (history.isEmpty()) {
+      findParamInstructionSystem(context).ifPresentOrElse(builder::addSystemMessage,
+          () -> builder.addSystemMessage(DEFAULT_SYSTEM_INSTRUCTION));
+    } else {
+      history.forEach(x -> {
+        switch (x.getRole()) {
+          case ASSISTANT -> builder.addAssistantMessage(x.getText());
+          case USER -> builder.addUserMessage(x.getText());
+          case DEVELOPER -> builder.addDeveloperMessage(x.getText());
+          case SYSTEM -> builder.addSystemMessage(x.getText());
+          default -> throw new IllegalArgumentException("Unexpected role type: " + x.getText());
+        }
+      });
+    }
+
+    builder.addUserMessage(prompt);
 
     this.findParamTemperature(context).ifPresent(builder::temperature);
     this.findParamSeed(context).ifPresent(builder::seed);
     this.findParamTopP(context).ifPresent(builder::topP);
     this.findParamMaxTokens(context).ifPresent(builder::maxCompletionTokens);
-
-    if (contentRecords.stream().noneMatch(x -> x.getRole().isModel())) {
-      findParamInstructionSystem(context).ifPresentOrElse(builder::addSystemMessage,
-          () -> builder.addSystemMessage(DEFAULT_SYSTEM_INSTRUCTION));
-    }
 
     if (model != null) {
       builder.model(model);
@@ -104,7 +107,8 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
   @Override
   public String processPrompt(
       final PreprocessorContext context,
-      final List<ContentRecord> contents
+      final List<ContentRecord> history,
+      final String prompt
   ) {
     final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
     final String sources = StringUtils.asText(positionInfo, true);
@@ -114,7 +118,8 @@ public class OpenAiJcpAiProcessor extends AbstractJcpAiProcessor {
     final OpenAIClient client = this.prepareOpenAiClient(context);
     try {
       final String model = this.findModel(PROPERTY_OPENAI_MODEL, context, positionInfo);
-      final ChatCompletionCreateParams messageParams = this.makeMessage(context, model, contents);
+      final ChatCompletionCreateParams messageParams =
+          this.makeMessage(context, model, history, prompt);
       this.logDebug("Message create params for " + sources + ": " + messageParams);
 
       this.logInfo(String.format("sending prompt from %s to model %s, max tokens %s",

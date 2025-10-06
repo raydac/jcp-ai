@@ -31,11 +31,8 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
   private MessageCreateParams makeMessage(
       final PreprocessorContext context,
       final String model,
-      final List<ContentRecord> records) {
-
-    if (records.isEmpty()) {
-      throw new IllegalArgumentException("No provided records for request");
-    }
+      final List<ContentRecord> records,
+      final String prompt) {
 
     var builder = MessageCreateParams.builder();
 
@@ -71,6 +68,8 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
           throw new IllegalArgumentException("Detected unsupported role: " + x.getRole());
       }
     });
+
+    builder.addUserMessage(prompt);
 
     if (model != null) {
       builder.model(model);
@@ -118,7 +117,8 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
   @Override
   public String processPrompt(
       final PreprocessorContext context,
-      final List<ContentRecord> contents) {
+      final List<ContentRecord> history,
+      final String prompt) {
     final FilePositionInfo positionInfo = PreprocessorUtils.extractFilePositionInfo(context);
     final String sources = positionInfo.getFile().getName() + ':' + positionInfo.getLineNumber();
 
@@ -128,12 +128,12 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
     try {
       final String model = this.findModel(PROPERTY_ANTHROPIC_MODEL, context, positionInfo);
 
-      final MessageCreateParams message = makeMessage(context, model, contents);
+      final MessageCreateParams message = makeMessage(context, model, history, prompt);
       this.logDebug("Message create params: " + message);
       logInfo(String.format("sending prompt from %s, model is %s, max tokens %d", sources,
           message.model().asString(), message.maxTokens()));
       response =
-          client.messages().create(makeMessage(context, model, contents));
+          client.messages().create(message);
 
     } finally {
       client.close();
