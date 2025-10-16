@@ -3,7 +3,7 @@
    - added user defined functions `string $ai_call(prompt)` and `string $ai_call(use_cache, prompt)` to make calls of agents from preprocessor macros
    - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.23.0`
    - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.9.0`
-   - jcp-ai-openai uses as base library `com.openai:openai-java:4.3.0`
+   - jcp-ai-openai uses as base library `com.openai:openai-java:4.4.0`
    - minimal supported version of JCP 7.3.0
 
 # 1.0.3 (13-sep-2025)
