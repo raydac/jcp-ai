@@ -30,7 +30,7 @@ public class ArraySorter {
 
   //$ /*$$ai_call(false, "generate empty body Java11 method with signature public static int add666(int a,int b), it must be prepared for injecting into code and must not have any wrapped class or comments, as result must be returned sum")$*/
 
-  //$ /*$$ai_chain("Create a static method that reverses a string. The method must be without any wrapping by a class and prepared for copy-paste into code. No any additional methods or test methods.", "Generate the Java method signature and a brief step plan.", "Write the full Java static method implementation but only method to be injected into code without comments and wrapped class.", "The method must have prefix 'autoai_' in its name, no any wrapping class, main methods or test methods for the method.")$*/
+  //$ /*$$ai_chain("Create a static method that reverses a string. The method must be without any wrapping by a class and prepared for copy-paste into code. No any additional methods or test methods.", "Generate the Java method signature and a brief step plan.", "Write the full Java method implementation but only method to be injected into code without comments and wrapped class.", "The method must have prefix 'autoai_' in its name, no any wrapping class, main methods or test methods for the method.", "Ensure that the method has correct name and it is static one.")$*/
 
   //#-
   public static int add666(int a, int b) {
