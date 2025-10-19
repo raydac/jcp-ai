@@ -67,7 +67,7 @@ classpath.
 Prompts are written in the source code as single-line comments using `//$` or `//$$`, with the prefix `AI>` for
 single-line prompts, or `"""AI>` for multi-line prompts.
 
-To recognize `"""` as a single text block in **JCP 7.2.1**, the `allowBlocks` flag must be set to `true`.
+To recognize `"""` as a single text block since **JCP 7.2.1**, the `allowBlocks` flag must be set to `true`.
 
 ## Functions to call AI
 
