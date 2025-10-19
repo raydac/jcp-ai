@@ -62,17 +62,34 @@ classpath.
 
 # Inject prompts into sources
 
+## Inject prompt as commented text block
+
 Prompts are written in the source code as single-line comments using `//$` or `//$$`, with the prefix `AI>` for
 single-line prompts, or `"""AI>` for multi-line prompts.
 
 To recognize `"""` as a single text block in **JCP 7.2.1**, the `allowBlocks` flag must be set to `true`.
 
-JCP also supports the `//#-` and `//#+` directives to control whether lines are included in the final output file:
+## Functions to call AI
+
+Since 1.1.0 provided three functions (as user defined ones) to make AI calls.
+
+- `STRING $ai_call(STRING)` allows to make call to AI agent with prompt provided as its string argument, it uses
+  response cache.
+- `STRING $ai_call(BOOL, STRING)` allows to make call to AI agent with prompt provided as its string argument, the first
+  flag shows use of response cache, if `false` then cache will be ignored.
+- `STRING $ai_chain(STRING, STRING, ...)` allows make chain calls to AI agent with providing of intermediate responses
+  as a history, the last result response returned as result of call.
+
+## Useful trick in JCP
+
+JCP provides both `//#-` and `//#+` directives to control whether lines are included in the final output file:
 
 - `//#-` disables output (lines are excluded).
 - `//#+` enables output again.
 
 This combination of directives allows method stubs to be excluded from the final generated code.
+
+## Example
 
 Below is an example of how to define a prompt to generate a method, and then replace that prompt with the result from a
 language model (LLM).
