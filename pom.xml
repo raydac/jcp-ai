@@ -5,7 +5,7 @@
 
     <groupId>com.igormaznitsa</groupId>
     <artifactId>jcp-ai</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.0</version>
     <packaging>pom</packaging>
 
     <inceptionYear>2025</inceptionYear>
@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <junit.version>5.13.4</junit.version>
-        <jcp.version>7.3.0-SNAPSHOT</jcp.version>
+        <jcp.version>7.3.0</jcp.version>
 
         <client.version.gemini>1.23.0</client.version.gemini>
         <client.version.openai>4.5.0</client.version.openai>

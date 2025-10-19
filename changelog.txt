@@ -1,4 +1,4 @@
-# 1.1.0 (SNAPSHOT)
+# 1.1.0 (19-okt-2025)
    - added user defined function `string $ai_chain(prompt...)` to organize chain of prompts with history between calls
    - added user defined functions `string $ai_call(prompt)` and `string $ai_call(use_cache, prompt)` to make calls of agents from preprocessor macros
    - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.23.0`

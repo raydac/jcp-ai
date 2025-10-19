@@ -20,17 +20,18 @@ public class ArraySorter {
   //$"""AI> 4. if any import needed then use canonical class name and don't add import section
   //$"""AI> 5. the result is only method, iy must not be wrapped by class or interface
   //$"""AI> 6. the method must be fast and implement effective algorithm but it should be enough compact
+  //$"""AI> 7. dont use import section, if needed import a class to use its methods then use full path to the method in the call point 
   //#-
   public static int[] fastSort(final int[] array, final boolean asc) {
     throw new UnsupportedOperationException("not implemented");
   }
   //#+
 
-  //$ /*$$ai_call("generate a public static void method hello world for Java 11, ensure the function is not wrapped by any class and only the method in response, it will be inserted into existing sources")$*/
+  //$ /*$$ai_call("generate a public static void method hello world for Java 11, only method without any wrapping classes, ensure the function is not wrapped by any class and only the method in response, it will be inserted into existing sources")$*/
 
-  //$ /*$$ai_call(false, "generate empty body Java11 method with signature public static int add666(int a,int b), it must be prepared for injecting into code and must not have any wrapped class or comments, as result must be returned sum")$*/
+  //$ /*$$ai_call(false, "generate empty body Java11 method with signature public static int add666(int a,int b), only method no any wrapping classes, it must be prepared for injecting into code and must not have any wrapped class or comments, as result must be returned sum")$*/
 
-  //$ /*$$ai_chain("Create a static method that reverses a string. The method must be without any wrapping by a class and prepared for copy-paste into code. No any additional methods or test methods.", "Generate the Java method signature and a brief step plan.", "Write the full Java method implementation but only method to be injected into code without comments and wrapped class.", "The method must have prefix 'autoai_' in its name, no any wrapping class, main methods or test methods for the method.", "Ensure that the method has correct name and it is static one.")$*/
+  //$ /*$$ai_chain("Create a static method that reverses a string. Only method, no wrapping classes. The method must be without any wrapping by a class and prepared for copy-paste into code. No any additional methods or test methods.", "Generate the Java method signature and a brief step plan.", "Write the full Java method implementation but only method to be injected into code without comments and wrapped class.", "The method must have prefix 'autoai_' in its name, no any wrapping class, main methods or test methods for the method.", "Ensure that the method has correct name and it is static one.")$*/
 
   //#-
   public static int add666(int a, int b) {

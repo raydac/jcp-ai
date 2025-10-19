@@ -2,12 +2,22 @@
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%20License%202.0-green.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Java 17+](https://img.shields.io/badge/java-17%2b-green.svg)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 [![Maven 3.8+](https://img.shields.io/badge/maven-3.8%2b-green.svg)](https://maven.apache.org/)      
-[![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.0.3-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.0.3|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.0.3-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.3|jar)
-[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.0.3-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.0.3|jar)   
+[![Maven central](https://img.shields.io/badge/jcp--ai--anthropic-1.1.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-anthropic|1.1.0|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--gemini-1.1.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-gemini|1.0.3|jar)
+[![Maven central](https://img.shields.io/badge/jcp--ai--openai-1.1.0-green.svg)](http://search.maven.org/#artifactdetails|com.igormaznitsa|jcp-ai-openai|1.1.0|jar)   
 [![Arthur's acres sanctuary donation](assets/arthur_sanctuary_banner.png)](https://www.arthursacresanimalsanctuary.org/donate)
 
 # Changelog
+
+## 1.1.0 (19-okt-2025)
+
+- added user defined function `string $ai_chain(prompt...)` to organize chain of prompts with history between calls
+- added user defined functions `string $ai_call(prompt)` and `string $ai_call(use_cache, prompt)` to make calls of
+  agents from preprocessor macros
+- jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.23.0`
+- jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.9.0`
+- jcp-ai-openai uses as base library `com.openai:openai-java:4.5.0`
+- __minimal supported version of JCP 7.3.0__
 
 ## 1.0.3 (13-sep-2025)
 
@@ -15,13 +25,6 @@
 - jcp-ai-openai uses as base library `com.openai:openai-java:3.5.2`
 - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.7.0`
 - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.16.0`
-
-## 1.0.2 (13-aug-2025)
-
-- fixed truncation for prompt cache files
-- jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.5.0`
-- jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.11.0`
-- jcp-ai-openai uses as base library `com.openai:openai-java:3.0.2`
 
 [Full changelog](changelog.txt)
 
@@ -96,6 +99,13 @@ public static int[] fastSort(final int[] array, final boolean asc) {
   throw new UnsupportedOperationException("not generated");
 }
 //#+
+
+//$ /*$$ai_call("generate a public static void method hello world for Java 11, ensure the function is not wrapped by any class and only the method in response, it will be inserted into existing sources")$*/
+
+//$ /*$$ai_call(false, "generate empty body Java11 method with signature public static int add666(int a,int b), it must be prepared for injecting into code and must not have any wrapped class or comments, as result must be returned sum")$*/
+
+//$ /*$$ai_chain("Create a static method that reverses a string. The method must be without any wrapping by a class and prepared for copy-paste into code. No any additional methods or test methods.", "Generate the Java method signature and a brief step plan.", "Write the full Java method implementation but only method to be injected into code without comments and wrapped class.", "The method must have prefix 'autoai_' in its name, no any wrapping class, main methods or test methods for the method.", "Ensure that the method has correct name and it is static one.")$*/
+
 ```
 
 All sequent lines marked as `//$"""AI>` will be recognized as single prompt, they will be accumulated as text block
@@ -162,9 +172,9 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath "com.igormaznitsa:jcp:7.2.1"
-      classpath "com.igormaznitsa:jcp-ai-gemini:1.0.3"
-      classpath "com.google.genai:google-genai:1.16.0"
+      classpath "com.igormaznitsa:jcp:7.3.0"
+      classpath "com.igormaznitsa:jcp-ai-gemini:1.1.0"
+      classpath "com.google.genai:google-genai:1.23.0"
   }
 }
 
@@ -233,7 +243,7 @@ Gemini AI as target LLM. The build section in the case should look like the snip
         <plugin>
             <groupId>com.igormaznitsa</groupId>
             <artifactId>jcp</artifactId>
-            <version>7.2.1</version>
+            <version>7.3.0</version>
             <executions>
                 <execution>
                     <id>preprocessSources</id>
@@ -256,12 +266,12 @@ Gemini AI as target LLM. The build section in the case should look like the snip
               <dependency>
                 <groupId>com.igormaznitsa</groupId>
                 <artifactId>jcp-ai-gemini</artifactId>
-                  <version>1.0.3</version>
+                  <version>1.1.0</version>
               </dependency>
               <dependency>
                 <groupId>com.google.genai</groupId>
                 <artifactId>google-genai</artifactId>
-                  <version>1.16.0</version>
+                  <version>1.23.0</version>
               </dependency>
             </dependencies>
         </plugin>
