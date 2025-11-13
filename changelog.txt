@@ -1,5 +1,5 @@
 # 1.1.1 (SNAPSHOT)
-   - jcp-ai-openai uses as base library `com.openai:openai-java:4.7.1`
+   - jcp-ai-openai uses as base library `com.openai:openai-java:4.8.0`
    - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.27.0`
    - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.10.0`
 
