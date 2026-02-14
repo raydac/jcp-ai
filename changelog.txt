@@ -1,7 +1,7 @@
 # 1.1.1 (SNAPSHOT)
-   - jcp-ai-openai uses as base library `com.openai:openai-java:4.17.0`
-   - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.37.0`
-   - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.12.0`
+   - jcp-ai-openai uses as base library `com.openai:openai-java:4.21.0`
+   - jcp-ai-gemini uses as base library `com.google.genai:google-genai:1.39.0`
+   - jcp-ai-anthropic uses as base library `com.anthropic:anthropic-java:2.14.0`
 
 # 1.1.0 (19-okt-2025)
    - added user defined function `string $ai_chain(prompt...)` to organize chain of prompts with history between calls
