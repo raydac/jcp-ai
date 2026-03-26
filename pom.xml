@@ -19,7 +19,7 @@
         <jcp.version>7.3.0</jcp.version>
 
         <client.version.gemini>1.44.0</client.version.gemini>
-        <client.version.openai>4.29.1</client.version.openai>
+        <client.version.openai>4.30.0</client.version.openai>
         <client.version.anthropic>2.18.0</client.version.anthropic>
     </properties>
 
