@@ -74,7 +74,7 @@ public class AnthropicJcpAiProcessor extends AbstractJcpAiProcessor {
     if (model != null) {
       builder.model(model);
     } else {
-      builder.model(Model.CLAUDE_SONNET_4_0);
+      builder.model(Model.of(Model.Value.values()[0].name()));
     }
 
     return builder.build();
