@@ -17,10 +17,9 @@
         <maven.compiler.release>17</maven.compiler.release>
         <junit.version>5.13.4</junit.version>
         <jcp.version>7.3.0</jcp.version>
-
-        <client.version.gemini>1.69.0</client.version.gemini>
-        <client.version.openai>4.56.0</client.version.openai>
-        <client.version.anthropic>2.60.0</client.version.anthropic>
+        <client.version.gemini>1.73.0</client.version.gemini>
+        <client.version.openai>4.69.0</client.version.openai>
+        <client.version.anthropic>2.65.0</client.version.anthropic>
     </properties>
 
     <modules>
@@ -87,42 +86,42 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.5.0</version>
+                    <version>3.6.3</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.14.0</version>
+                    <version>3.15.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>3.2.7</version>
+                    <version>3.2.8</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
-                    <version>3.6.0</version>
+                    <version>3.6.2</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.4.2</version>
+                    <version>3.5.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.3.1</version>
+                    <version>3.4.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.7.1</version>
+                    <version>3.8.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>flatten-maven-plugin</artifactId>
-                    <version>1.7.1</version>
+                    <version>1.8.0</version>
                 </plugin>
                 <plugin>
                     <groupId>com.igormaznitsa</groupId>
@@ -150,8 +149,14 @@
                                         <scope>test</scope>
                                         <scope>provided</scope>
                                     </ignoredScopes>
+                                    <ignoreOptionals>true</ignoreOptionals>
+                                    <excludes>
+                                        <exclude>com.igormaznitsa:jcp-ai-commons:*</exclude>
+                                    </excludes>
                                 </enforceBytecodeVersion>
                                 <banCircularDependencies>
+                                    <searchTransitive>false</searchTransitive>
+                                    <ignoreOptionals>true</ignoreOptionals>
                                     <ignoredScopes>
                                         <scope>test</scope>
                                         <scope>provided</scope>
@@ -175,7 +180,7 @@
                     <dependency>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>extra-enforcer-rules</artifactId>
-                        <version>1.10.0</version>
+                        <version>1.12.0</version>
                     </dependency>
                 </dependencies>
             </plugin>
